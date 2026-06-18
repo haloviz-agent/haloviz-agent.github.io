@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="theme-color" content="#0F172A"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Haloviz"/>
+  <title>Haloviz</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}html,body,#root{height:100%;}
+    body{font-family:"Plus Jakarta Sans",-apple-system,sans-serif;background:#F8FAFC;
+      -webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased;overscroll-behavior:none;}
+    #ib{display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
+      background:#0F172A;color:#fff;padding:10px 16px;border-radius:12px;font-size:13px;
+      font-family:"Plus Jakarta Sans",sans-serif;z-index:9999;
+      box-shadow:0 8px 24px rgba(0,0,0,0.3);align-items:center;gap:10px;max-width:440px;}
+    #ib button{background:#2563EB;color:#fff;border:none;padding:6px 12px;
+      border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;}
+    #ib .d{background:none;border:none;color:#94A3B8;font-size:18px;cursor:pointer;}
+    #ib.show{display:flex;animation:su 0.3s ease;}
+    @keyframes su{from{opacity:0;transform:translateX(-50%) translateY(16px)}
+      to{opacity:1;transform:translateX(-50%) translateY(0)}}
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <div id="ib">
+    <span>&#128242; Install Haloviz ke HP</span>
+    <button id="ib-btn">Install</button>
+    <button class="d" id="ib-x">&#10005;</button>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+  <script src="app.js"></script>
+  <script>
+    var dp=null,b=document.getElementById("ib");
+    window.addEventListener("beforeinstallprompt",function(e){
+      e.preventDefault();dp=e;
+      if(!localStorage.getItem("hv_dis")){setTimeout(function(){b.classList.add("show");},3000);}
+    });
+    document.getElementById("ib-btn").addEventListener("click",function(){
+      if(!dp)return;dp.prompt();dp.userChoice.then(function(){b.classList.remove("show");dp=null;});
+    });
+    document.getElementById("ib-x").addEventListener("click",function(){
+      b.classList.remove("show");localStorage.setItem("hv_dis","1");
+    });
+    window.addEventListener("appinstalled",function(){b.classList.remove("show");});
+    if("serviceWorker" in navigator){
+      var sw="const C='hv-v15';self.addEventListener('install',e=>{self.skipWaiting();});self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener('fetch',e=>{if(e.request.url.includes('api.anthropic.com')||e.request.url.includes('fonts.g')||e.request.url.includes('jsdelivr.net'))return;e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(function(res){var cl=res.clone();caches.open(C).then(function(c){c.put(e.request,cl);});return res;}).catch(function(){return caches.match(e.request);})));});";
+      navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:"application/javascript"}))).catch(function(){});
+    }
+  </script>
+</body>
+</html>
