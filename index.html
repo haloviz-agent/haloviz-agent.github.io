@@ -157,22 +157,171 @@ const COLOR_GUIDE = [
 ];
 
 const PREATTENTIVE = [
-  {attr:"Warna (Hue)",attrEn:"Color (Hue)",desc:"Paling kuat untuk membedakan kategori.",descEn:"Most powerful for differentiating categories.",type:"color",icon:"🔴",
-   lblId:"← warna beda langsung terlihat",lblEn:"← different color spotted instantly"},
-  {attr:"Intensitas Warna",attrEn:"Color Intensity",desc:"Ideal untuk menunjukkan magnitude dari rendah ke tinggi.",descEn:"Ideal for showing magnitude from low to high.",type:"intensity",icon:"◐",
-   lblId:"intensitas → magnitude",lblEn:"intensity → magnitude"},
-  {attr:"Posisi",attrEn:"Position",desc:"Paling akurat untuk membandingkan nilai.",descEn:"Most accurate for comparing values.",type:"position",icon:"📍",
-   lblId:"posisi = perbandingan paling akurat",lblEn:"position = most accurate comparison"},
-  {attr:"Ukuran",attrEn:"Size",desc:"Efektif untuk magnitude, tapi kurang presisi.",descEn:"Effective for magnitude but less precise.",type:"size",icon:"⬛",
-   lblId:"ukuran besar = nilai besar",lblEn:"larger size = larger value"},
-  {attr:"Bentuk",attrEn:"Shape",desc:"Berguna untuk membedakan kategori di scatter plot.",descEn:"Useful for differentiating categories in scatter plots.",type:"shape",icon:"△",
-   lblId:"bentuk beda = kategori beda",lblEn:"different shape = different category"},
-  {attr:"Orientasi",attrEn:"Orientation",desc:"Membedakan kelompok, gunakan dengan hati-hati.",descEn:"Can differentiate groups, use carefully.",type:"orientation",icon:"↗",
-   lblId:"orientasi beda = grup beda",lblEn:"different orientation = different group"},
-  {attr:"Enclosure",attrEn:"Enclosure",desc:"Kotak di sekitar elemen langsung memberi kesan satu grup.",descEn:"Box around elements immediately signals one group.",type:"enclosure",icon:"⬡",
-   lblId:"kotak = satu grup",lblEn:"box = one group"},
-  {attr:"Koneksi",attrEn:"Connection",desc:"Garis yang menghubungkan dua titik menunjukkan relasi.",descEn:"Lines connecting points show a relationship.",type:"connection",icon:"—",
-   lblId:"garis = relasi langsung terlihat",lblEn:"line = relationship immediately visible"},
+  {attr:"Warna (Hue)",attrEn:"Color (Hue)",
+   desc:"Paling kuat untuk membedakan kategori. Mata langsung tertuju pada elemen dengan warna berbeda.",
+   descEn:"Most powerful for differentiating categories. Eyes immediately drawn to elements with different color.",
+   tipId:"Gunakan maksimal 6 warna kategoris. Mulai dari abu-abu untuk semua data, lalu beri warna hanya pada elemen terpenting. Pastikan palette ramah buta warna — hindari mengandalkan merah vs hijau saja, karena ~8% pria tidak dapat membedakannya.",
+   tipEn:"Use maximum 6 categorical colors. Start with gray for all data, then color only the most important element. Ensure palette is colorblind-friendly — avoid relying solely on red vs green, as ~8% of men cannot distinguish them.",
+   whenId:"Membedakan 2–6 kategori diskrit pada chart",
+   whenEn:"Differentiating 2–6 discrete categories on a chart",
+   avoidId:"Lebih dari 6 warna sekaligus; merah+hijau saja tanpa perbedaan lain",
+   avoidEn:"More than 6 colors at once; red+green only without other differences",
+   type:"color",icon:"🔴",lblId:"← warna beda langsung terlihat",lblEn:"← different color spotted instantly"},
+
+  {attr:"Intensitas Warna",attrEn:"Color Intensity",
+   desc:"Ideal untuk menunjukkan magnitude atau skala dari rendah ke tinggi.",
+   descEn:"Ideal for showing magnitude or scale from low to high.",
+   tipId:"Gunakan satu warna dengan gradasi terang→gelap (sequential palette) untuk heatmap, choropleth, atau bubble chart. Jangan gunakan intensitas untuk membedakan kategori — itu tugas warna hue. Diverging palette (biru↔merah) cocok bila ada nilai nol/netral sebagai titik tengah.",
+   tipEn:"Use one color grading light→dark (sequential palette) for heatmaps, choropleths, or bubble charts. Don't use intensity to differentiate categories — that's the job of hue. Use diverging palette (blue↔red) when there's a neutral zero/midpoint value.",
+   whenId:"Heatmap, choropleth, atau skala nilai kontinu",
+   whenEn:"Heatmaps, choropleths, or continuous value scales",
+   avoidId:"Untuk membedakan kategori (pakai hue); gradasi yang terlalu halus sehingga susah dibedakan",
+   avoidEn:"For differentiating categories (use hue instead); gradients too subtle to distinguish",
+   type:"intensity",icon:"◐",lblId:"intensitas → magnitude",lblEn:"intensity → magnitude"},
+
+  {attr:"Posisi",attrEn:"Position",
+   desc:"Paling akurat untuk membandingkan nilai. Dasar dari bar chart dan scatter plot.",
+   descEn:"Most accurate for comparing values. Foundation of bar charts and scatter plots.",
+   tipId:"Selalu mulai axis bar chart dari nol — memulai dari nilai lain mendistorsi persepsi perbedaan. Beri whitespace yang cukup sehingga posisi antar elemen mudah dibandingkan. Pada scatter plot, gunakan aspek rasio 1:1 agar korelasi tidak misleading.",
+   tipEn:"Always start bar chart axis at zero — starting from other values distorts perceived differences. Give enough whitespace so positions are easy to compare. In scatter plots, use 1:1 aspect ratio so correlations aren't misleading.",
+   whenId:"Perbandingan nilai: bar chart, scatter plot, dot plot, line chart",
+   whenEn:"Value comparison: bar charts, scatter plots, dot plots, line charts",
+   avoidId:"Axis yang dipotong (truncated); aspek rasio yang misleading pada scatter plot",
+   avoidEn:"Truncated axes; misleading aspect ratios on scatter plots",
+   type:"position",icon:"📍",lblId:"posisi = perbandingan paling akurat",lblEn:"position = most accurate comparison"},
+
+  {attr:"Ukuran",attrEn:"Size",
+   desc:"Efektif untuk magnitude, tapi kurang presisi. Gunakan untuk perkiraan, bukan nilai eksak.",
+   descEn:"Effective for magnitude but less precise. Use for estimates, not exact values.",
+   tipId:"Encode area (bukan diameter atau jari-jari) agar proporsi akurat. Bubble dengan diameter 2× bukan berarti nilai 2× — areanya 4×. Selalu tambahkan label nilai langsung di elemen karena mata manusia kurang akurat membaca ukuran relatif.",
+   tipEn:"Encode area (not diameter or radius) for accurate proportions. A bubble with 2× diameter does not mean 2× value — its area is 4×. Always add value labels directly on elements since human eyes are less accurate at reading relative sizes.",
+   whenId:"Bubble chart, treemap, proportional symbols map",
+   whenEn:"Bubble charts, treemaps, proportional symbol maps",
+   avoidId:"Encoding diameter/radius bukan area; tanpa label nilai untuk perbandingan presisi",
+   avoidEn:"Encoding diameter/radius instead of area; no value labels when precise comparison is needed",
+   type:"size",icon:"⬛",lblId:"ukuran besar = nilai besar",lblEn:"larger size = larger value"},
+
+  {attr:"Bentuk",attrEn:"Shape",
+   desc:"Berguna untuk membedakan kategori di scatter plot. Kombinasikan dengan warna untuk efek terbaik.",
+   descEn:"Useful for differentiating categories in scatter plots. Combine with color for best effect.",
+   tipId:"Gunakan maksimal 5 bentuk berbeda — lebih dari itu sulit diingat. Pilih bentuk yang jelas berbeda satu sama lain: lingkaran, segitiga, persegi, berlian, dan silang. Selalu kombinasikan dengan warna agar tetap terbaca oleh pengguna buta warna.",
+   tipEn:"Use maximum 5 different shapes — more than that is hard to remember. Choose clearly distinct shapes: circle, triangle, square, diamond, and cross. Always combine with color so it remains readable for colorblind users.",
+   whenId:"Scatter plot dengan beberapa kategori; dikombinasikan dengan warna",
+   whenEn:"Scatter plots with multiple categories; combined with color",
+   avoidId:"Lebih dari 5 bentuk; bentuk yang terlalu mirip; mengandalkan bentuk tanpa warna",
+   avoidEn:"More than 5 shapes; shapes that look too similar; relying on shape alone without color",
+   type:"shape",icon:"△",lblId:"bentuk beda = kategori beda",lblEn:"different shape = different category"},
+
+  {attr:"Orientasi",attrEn:"Orientation",
+   desc:"Membedakan kelompok, gunakan dengan hati-hati agar tidak membingungkan.",
+   descEn:"Can differentiate groups, use carefully to avoid confusion.",
+   tipId:"Pastikan perbedaan orientasi cukup besar (minimal 30°) agar mudah dibedakan. Paling sering digunakan pada peta (wind direction, flow) atau texture. Jarang berdiri sendiri — kombinasikan dengan warna atau bentuk untuk aksesibilitas yang lebih baik.",
+   tipEn:"Ensure orientation differences are large enough (at least 30°) to be distinguishable. Most commonly used on maps (wind direction, flow) or textures. Rarely stands alone — combine with color or shape for better accessibility.",
+   whenId:"Peta arah angin/aliran; texture pattern; dikombinasikan dengan atribut lain",
+   whenEn:"Wind/flow direction maps; texture patterns; combined with other attributes",
+   avoidId:"Perbedaan orientasi kecil (<30°); lebih dari 4 orientasi berbeda",
+   avoidEn:"Small orientation differences (<30°); more than 4 different orientations",
+   type:"orientation",icon:"↗",lblId:"orientasi beda = grup beda",lblEn:"different orientation = different group"},
+
+  {attr:"Enclosure",attrEn:"Enclosure",
+   desc:"Kotak di sekitar elemen langsung memberi kesan satu grup. Efektif untuk grouping.",
+   descEn:"Box around elements immediately signals one group. Effective for grouping.",
+   tipId:"Sangat efektif untuk highlight area penting pada chart (shaded region, annotation box). Gunakan border tipis atau background subtle — tidak perlu bold agar tidak mendominasi. Hindari lebih dari 2 level nesting enclosure karena hierarki jadi sulit dipahami.",
+   tipEn:"Very effective for highlighting important areas on charts (shaded regions, annotation boxes). Use thin borders or subtle backgrounds — no need for bold style so it doesn't dominate. Avoid more than 2 nesting levels as the hierarchy becomes hard to understand.",
+   whenId:"Highlight area, annotation box, grouping elemen pada tabel atau chart",
+   whenEn:"Highlighted areas, annotation boxes, grouping elements in tables or charts",
+   avoidId:"Lebih dari 2 level nesting; enclosure yang terlalu tebal sehingga mendominasi data",
+   avoidEn:"More than 2 nesting levels; enclosures too bold that they dominate the data",
+   type:"enclosure",icon:"⬡",lblId:"kotak = satu grup",lblEn:"box = one group"},
+
+  {attr:"Koneksi",attrEn:"Connection",
+   desc:"Garis yang menghubungkan dua titik langsung menunjukkan relasi. Dasar dari line chart.",
+   descEn:"Lines connecting points immediately show a relationship. Foundation of line charts.",
+   tipId:"Gunakan garis tipis untuk koneksi umum, lebih tebal untuk relasi yang kuat atau penting. Batasi jumlah koneksi yang ditampilkan — terlalu banyak garis menciptakan 'spaghetti chart' yang tidak terbaca. Pada line chart, urutan waktu harus selalu dari kiri ke kanan.",
+   tipEn:"Use thin lines for general connections, thicker for strong or important relationships. Limit the number of connections shown — too many lines create an unreadable 'spaghetti chart'. In line charts, time order must always run left to right.",
+   whenId:"Line chart, network diagram, flow chart, Sankey diagram",
+   whenEn:"Line charts, network diagrams, flow charts, Sankey diagrams",
+   avoidId:"Terlalu banyak koneksi (spaghetti chart); garis yang bersilangan tanpa penanda jelas",
+   avoidEn:"Too many connections (spaghetti chart); crossing lines without clear markers",
+   type:"connection",icon:"—",lblId:"garis = relasi langsung terlihat",lblEn:"line = relationship immediately visible"},
+
+  // ── Text-based Preattentive Attributes ────────────────────────────────────
+  {attr:"Tebal (Bold)",attrEn:"Bold",
+   desc:"Kata atau angka yang ditebalkan langsung menonjol dari teks biasa tanpa mengubah layout.",
+   descEn:"Bolded words or numbers immediately stand out from regular text without changing the layout.",
+   tipId:"Gunakan bold untuk kata kunci, angka penting, atau nama yang perlu diingat pembaca. Jangan bold lebih dari 10–15% teks — semakin sedikit yang di-bold, semakin kuat efeknya. Ideal untuk laporan, slide, atau tabel naratif.",
+   tipEn:"Use bold for key terms, important numbers, or names readers need to remember. Don't bold more than 10–15% of text — the less bolded, the stronger the effect. Ideal for reports, slides, or narrative tables.",
+   whenId:"Menandai angka kunci, istilah penting, nama metrik dalam narasi teks",
+   whenEn:"Marking key numbers, important terms, metric names in narrative text",
+   avoidId:"Bold terlalu banyak kata — efek jadi hilang karena semua tampak sama penting",
+   avoidEn:"Bolding too many words — the effect disappears when everything looks equally important",
+   type:"txt_bold",icon:"B",lblId:"",lblEn:""},
+
+  {attr:"Miring (Italic)",attrEn:"Italic",
+   desc:"Teks miring memberi penekanan lebih halus dari bold, cocok untuk istilah atau kutipan.",
+   descEn:"Italic gives softer emphasis than bold, suitable for terms, quotes, or secondary highlights.",
+   tipId:"Gunakan italic untuk istilah teknis, judul, kutipan, atau penekanan sekunder. Efeknya lebih halus dari bold — bagus untuk hierarki penekanan: bold untuk paling penting, italic untuk penting berikutnya. Hindari italic untuk teks panjang karena melelahkan mata.",
+   tipEn:"Use italic for technical terms, titles, quotes, or secondary emphasis. Its effect is softer than bold — good for emphasis hierarchy: bold for most important, italic for next level. Avoid italic for long passages as it strains the eyes.",
+   whenId:"Istilah teknis, judul karya, kutipan, penekanan sekunder",
+   whenEn:"Technical terms, work titles, quotes, secondary emphasis",
+   avoidId:"Teks paragraf panjang dalam italic; kombinasi italic+bold berlebihan",
+   avoidEn:"Long paragraph text in italic; excessive italic+bold combinations",
+   type:"txt_italic",icon:"I",lblId:"",lblEn:""},
+
+  {attr:"Ukuran Font",attrEn:"Font Size",
+   desc:"Teks yang lebih besar langsung menarik mata — paling kuat untuk headline atau angka KPI.",
+   descEn:"Larger text immediately attracts the eye — most powerful for headlines or KPI numbers.",
+   tipId:"Gunakan ukuran font jauh lebih besar (2–3× lipat) untuk angka KPI utama atau insight terpenting — bukan sedikit lebih besar. Perbedaan kecil tidak cukup preattentive. Dalam slide eksekutif, satu angka besar + teks penjelasan kecil lebih efektif dari banyak angka berukuran sama.",
+   tipEn:"Use font size significantly larger (2–3×) for key KPI numbers or the most important insight — not just slightly larger. Small differences aren't preattentive enough. In executive slides, one large number + small explanatory text is more effective than many same-sized numbers.",
+   whenId:"Angka KPI utama, headline insight, big number pada dashboard atau slide",
+   whenEn:"Key KPI numbers, insight headlines, big numbers on dashboards or slides",
+   avoidId:"Perbedaan ukuran terlalu kecil (<20%); menggunakan ukuran besar untuk banyak elemen",
+   avoidEn:"Differences too small (<20%); using large size for many elements simultaneously",
+   type:"txt_size",icon:"A",lblId:"",lblEn:""},
+
+  {attr:"Warna Teks",attrEn:"Text Color",
+   desc:"Satu kalimat atau kata berwarna di antara teks abu-abu langsung menjadi fokus.",
+   descEn:"One colored word or sentence among gray text immediately becomes the focus.",
+   tipId:"Gunakan warna teks untuk highlight insight paling penting dalam narasi. Sisanya buat abu-abu — kontras inilah yang menciptakan efek preattentive. Pilih 1 warna highlight saja per dokumen, dan gunakan warna yang sama konsisten untuk kategori yang sama.",
+   tipEn:"Use text color to highlight the most important insight in a narrative. Make the rest gray — this contrast creates the preattentive effect. Choose only 1 highlight color per document, and use the same color consistently for the same category.",
+   whenId:"Highlight satu temuan kunci dalam narasi; color-coding kategori dalam teks",
+   whenEn:"Highlighting one key finding in narrative; color-coding categories within text",
+   avoidId:"Lebih dari 2 warna berbeda dalam satu paragraf; warna yang terlalu terang atau terlalu lemah kontrasnya",
+   avoidEn:"More than 2 different colors in one paragraph; colors too bright or with too little contrast",
+   type:"txt_color",icon:"A",lblId:"",lblEn:""},
+
+  {attr:"Garis Bawah (Underline)",attrEn:"Underline",
+   desc:"Garis bawah menambahkan tanda visual langsung di bawah teks penting.",
+   descEn:"Underline adds a visual mark directly below important text.",
+   tipId:"Gunakan underline hemat — hanya untuk 1–2 frasa paling kritis. Hindari underline pada hyperlink yang tidak aktif karena audiens akan mengira itu link. Lebih baik pilih bold atau warna teks yang lebih kuat efek preattentive-nya. Underline paling efektif di tabel dan dokumen cetak.",
+   tipEn:"Use underline sparingly — only for 1–2 most critical phrases. Avoid underline on inactive hyperlinks as the audience will think it's a link. Bold or text color is usually more effective preattentively. Underline works best in tables and printed documents.",
+   whenId:"Tabel, dokumen cetak, highlight frasa singkat yang kritis",
+   whenEn:"Tables, printed documents, highlighting short critical phrases",
+   avoidId:"Underline panjang yang tampak seperti hyperlink; menggunakan underline untuk dekorasi",
+   avoidEn:"Long underlines that look like hyperlinks; using underline as decoration",
+   type:"txt_underline",icon:"U",lblId:"",lblEn:""},
+
+  {attr:"Pemisahan Spasial",attrEn:"Spatial Separation",
+   desc:"Whitespace dan jarak antar elemen secara visual memisahkan dan mengelompokkan informasi.",
+   descEn:"Whitespace and spacing between elements visually separates and groups information.",
+   tipId:"Proximity law (hukum Gestalt): elemen yang dekat dianggap satu kelompok. Gunakan whitespace untuk memisahkan ide berbeda dan mendekatkan informasi yang berkaitan. Dalam tabel, spasi antar baris atau pemisah kolom membantu pembaca scan data lebih cepat.",
+   tipEn:"Proximity law (Gestalt): elements that are close are perceived as one group. Use whitespace to separate different ideas and bring related information closer. In tables, row spacing or column separators help readers scan data faster.",
+   whenId:"Paragraf narasi, tabel, slide — memisahkan kelompok informasi berbeda",
+   whenEn:"Narrative paragraphs, tables, slides — separating different information groups",
+   avoidId:"Whitespace tidak konsisten; terlalu banyak whitespace yang membuat konten tampak tidak terhubung",
+   avoidEn:"Inconsistent whitespace; too much whitespace making content appear unrelated",
+   type:"txt_spatial",icon:"⎵",lblId:"",lblEn:""},
+
+  {attr:"Enclosure Teks",attrEn:"Text Enclosure",
+   desc:"Kotak atau highlight di sekitar teks langsung menandai frasa tersebut sebagai penting.",
+   descEn:"A box or highlight around text immediately marks that phrase as important.",
+   tipId:"Enclosure teks (highlight, box, background color) sangat efektif untuk annotation pada chart atau callout di slide. Gunakan warna background yang kontras namun tidak terlalu gelap agar teks tetap terbaca. Satu enclosure per halaman sudah cukup kuat — jangan berlebihan.",
+   tipEn:"Text enclosure (highlight, box, background color) is very effective for chart annotations or slide callouts. Use contrasting but not too dark background color so text remains readable. One enclosure per page is already strong enough — don't overdo it.",
+   whenId:"Callout box, annotation penting, highlight baris kritis di tabel",
+   whenEn:"Callout boxes, important annotations, highlighting critical rows in tables",
+   avoidId:"Terlalu banyak enclosure dalam satu halaman; background terlalu gelap menutupi teks",
+   avoidEn:"Too many enclosures on one page; background too dark obscuring the text",
+   type:"txt_enclosure",icon:"□",lblId:"",lblEn:""},
 ];
 
 const BOARD_TEMPLATES = [
@@ -368,6 +517,72 @@ function PreattentiveDemo({ item, lang }) {
       <text x="0" y={h} fontSize="9" fill="#94A3B8">{lbl}</text>
     </svg>
   );
+
+  // ── Text-based preattentive demos ───────────────────────────────────────
+  if (item.type && item.type.startsWith("txt_")) {
+    const isId = lang === "id";
+    const g  = {color:"#94A3B8"}; // gray = normal text
+    const hi = {color:"#0F172A", fontWeight:700}; // main text style
+    const BASE_ID = ["Tim berhasil capai milestone Q2.", "Distribusi berjalan normal.", "Semua divisi on track."];
+    const BASE_EN = ["Team achieved the Q2 milestone.", "Distribution is running normally.", "All divisions on track."];
+    const base = isId ? BASE_ID : BASE_EN;
+    const KEY_ID = "Penjualan turun 15% MoM";
+    const KEY_EN = "Sales declined 15% MoM";
+    const key = isId ? KEY_ID : KEY_EN;
+    const lbl2 = isId ? "← teks abu-abu + highlight = kontras langsung terlihat"
+                      : "← gray text + highlight = contrast immediately visible";
+
+    const wrap = (inner) => (
+      <div style={{background:"#F8FAFC",borderRadius:8,padding:"10px 12px",marginTop:8}}>
+        <div style={{fontSize:12,color:"#64748B",lineHeight:1.8}}>{inner}</div>
+        <div style={{fontSize:9,color:"#94A3B8",marginTop:6,fontStyle:"italic"}}>{lbl2}</div>
+      </div>
+    );
+
+    if (item.type === "txt_bold") return wrap(<>
+      <span style={g}>{base[0]} </span>
+      <span style={{color:"#0F172A",fontWeight:800}}>{key}.</span>
+      <span style={g}> {base[1]} {base[2]}</span>
+    </>);
+
+    if (item.type === "txt_italic") return wrap(<>
+      <span style={g}>{base[0]} </span>
+      <span style={{color:"#0F172A",fontStyle:"italic",fontWeight:600}}>{key}.</span>
+      <span style={g}> {base[1]} {base[2]}</span>
+    </>);
+
+    if (item.type === "txt_size") return wrap(<>
+      <span style={{...g, fontSize:11}}>{base[0]} </span>
+      <span style={{fontSize:20,fontWeight:800,color:"#0F172A",lineHeight:1.2}}>{key}.</span>
+      <span style={{...g, fontSize:11}}> {base[1]} {base[2]}</span>
+    </>);
+
+    if (item.type === "txt_color") return wrap(<>
+      <span style={g}>{base[0]} </span>
+      <span style={{color:"#DC2626",fontWeight:700}}>{key}.</span>
+      <span style={g}> {base[1]} {base[2]}</span>
+    </>);
+
+    if (item.type === "txt_underline") return wrap(<>
+      <span style={g}>{base[0]} </span>
+      <span style={{color:"#0F172A",textDecoration:"underline",fontWeight:600}}>{key}.</span>
+      <span style={g}> {base[1]} {base[2]}</span>
+    </>);
+
+    if (item.type === "txt_spatial") return wrap(<>
+      <div style={{...g, marginBottom:8}}>{base[0]} {base[2]}</div>
+      <div style={{color:"#0F172A",fontWeight:700,borderLeft:"3px solid #2563EB",paddingLeft:8}}>{key}.</div>
+      <div style={{...g, marginTop:8}}>{base[1]}</div>
+    </>);
+
+    if (item.type === "txt_enclosure") return wrap(<>
+      <span style={g}>{base[0]} </span>
+      <span style={{background:"#FEF9C3",border:"1px solid #FDE047",borderRadius:4,padding:"1px 5px",color:"#713F12",fontWeight:700}}>{key}</span>
+      <span style={g}>. {base[1]} {base[2]}</span>
+    </>);
+
+    return null;
+  }
 
   return demo ? <div style={{background:"#F8FAFC",borderRadius:8,padding:"8px 10px",marginTop:8,overflowX:"auto"}}>{demo}</div> : null;
 }
@@ -574,18 +789,90 @@ function GuideModule({ lang }) {
 
       {tab===2 && (
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {/* Intro card */}
           <SCard style={{background:"#EFF6FF",border:"1px solid #BFDBFE"}}>
             <div style={{fontSize:12,color:"#1D4ED8",fontWeight:700,marginBottom:4}}>💡 {lang==="id"?"Apa itu Preattentive Attributes?":"What are Preattentive Attributes?"}</div>
-            <div style={{fontSize:12,color:"#1E40AF",lineHeight:1.6}}>{lang==="id"?"Elemen visual yang diproses otak secara otomatis dalam kurang dari 250ms — sebelum perhatian sadar aktif. Gunakan ini untuk langsung mengarahkan mata audiens ke informasi terpenting.":"Visual elements processed by the brain automatically in under 250ms — before conscious attention. Use these to immediately direct eyes to the most important information."}</div>
+            <div style={{fontSize:12,color:"#1E40AF",lineHeight:1.6}}>{lang==="id"?"Elemen visual yang diproses otak secara otomatis dalam kurang dari 250ms — sebelum perhatian sadar aktif. Berlaku untuk chart MAUPUN teks. Gunakan ini untuk langsung mengarahkan mata ke informasi terpenting.":"Visual elements processed by the brain in under 250ms — before conscious attention. Applies to both charts AND text. Use these to immediately direct eyes to the most important information."}</div>
           </SCard>
-          {PREATTENTIVE.map((item,i)=>(
+
+          {/* Section: Chart attributes */}
+          <div style={{display:"flex",alignItems:"center",gap:8,padding:"4px 0"}}>
+            <div style={{height:1,flex:1,background:"#E2E8F0"}}/>
+            <span style={{fontSize:11,fontWeight:700,color:"#2563EB",textTransform:"uppercase",letterSpacing:1,flexShrink:0}}>
+              📊 {lang==="id"?"Untuk Grafik & Chart":"For Charts & Graphs"}
+            </span>
+            <div style={{height:1,flex:1,background:"#E2E8F0"}}/>
+          </div>
+
+          {PREATTENTIVE.filter(item=>!item.type.startsWith("txt_")).map((item,i)=>(
             <SCard key={i}>
               <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
-                <span style={{fontSize:20,flexShrink:0}}>{item.icon}</span>
+                <div style={{width:32,height:32,borderRadius:8,background:"#F1F5F9",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{item.icon}</div>
                 <div style={{flex:1}}>
                   <div style={{fontWeight:700,fontSize:13,color:"#0F172A",marginBottom:2}}>{lang==="id"?item.attr:item.attrEn}</div>
-                  <div style={{fontSize:12,color:"#64748B",marginBottom:4}}>{lang==="id"?item.desc:item.descEn}</div>
+                  <div style={{fontSize:12,color:"#64748B",marginBottom:6,lineHeight:1.5}}>{lang==="id"?item.desc:item.descEn}</div>
                   <PreattentiveDemo item={item} lang={lang}/>
+                  {item.tipId && (
+                    <div style={{marginTop:8,background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:7,padding:"7px 10px"}}>
+                      <div style={{fontSize:10,fontWeight:700,color:"#15803D",marginBottom:3}}>💡 {lang==="id"?"Cara pakai":"How to use"}</div>
+                      <div style={{fontSize:11,color:"#166534",lineHeight:1.6}}>{lang==="id"?item.tipId:item.tipEn}</div>
+                    </div>
+                  )}
+                  {item.whenId && (
+                    <div style={{display:"flex",gap:6,marginTop:6,flexWrap:"wrap"}}>
+                      <div style={{flex:1,minWidth:120,background:"#EFF6FF",borderRadius:6,padding:"5px 8px"}}>
+                        <div style={{fontSize:9,fontWeight:700,color:"#2563EB",textTransform:"uppercase",marginBottom:2}}>✓ {lang==="id"?"Kapan":"When"}</div>
+                        <div style={{fontSize:10,color:"#1E40AF",lineHeight:1.4}}>{lang==="id"?item.whenId:item.whenEn}</div>
+                      </div>
+                      <div style={{flex:1,minWidth:120,background:"#FEF2F2",borderRadius:6,padding:"5px 8px"}}>
+                        <div style={{fontSize:9,fontWeight:700,color:"#DC2626",textTransform:"uppercase",marginBottom:2}}>✕ {lang==="id"?"Hindari":"Avoid"}</div>
+                        <div style={{fontSize:10,color:"#991B1B",lineHeight:1.4}}>{lang==="id"?item.avoidId:item.avoidEn}</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </SCard>
+          ))}
+
+          {/* Section: Text attributes */}
+          <div style={{display:"flex",alignItems:"center",gap:8,padding:"4px 0",marginTop:4}}>
+            <div style={{height:1,flex:1,background:"#E2E8F0"}}/>
+            <span style={{fontSize:11,fontWeight:700,color:"#7C3AED",textTransform:"uppercase",letterSpacing:1,flexShrink:0}}>
+              ✏️ {lang==="id"?"Untuk Teks & Narasi":"For Text & Narrative"}
+            </span>
+            <div style={{height:1,flex:1,background:"#E2E8F0"}}/>
+          </div>
+          <SCard style={{background:"#F5F3FF",border:"1px solid #DDD6FE"}}>
+            <div style={{fontSize:11,color:"#5B21B6",lineHeight:1.6}}>{lang==="id"?"Preattentive attributes berlaku juga untuk teks di laporan, slide, dan narasi. Gunakan formatting berikut untuk mengarahkan perhatian pembaca ke informasi terpenting — tanpa mengubah kontennya.":"Preattentive attributes apply to text in reports, slides, and narratives too. Use the following formatting to direct reader attention to the most important information — without changing the content."}</div>
+          </SCard>
+
+          {PREATTENTIVE.filter(item=>item.type.startsWith("txt_")).map((item,i)=>(
+            <SCard key={i}>
+              <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
+                <div style={{width:32,height:32,borderRadius:8,background:"#F5F3FF",border:"1px solid #DDD6FE",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:800,color:"#6D28D9",flexShrink:0}}>{item.icon}</div>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,fontSize:13,color:"#0F172A",marginBottom:2}}>{lang==="id"?item.attr:item.attrEn}</div>
+                  <div style={{fontSize:12,color:"#64748B",marginBottom:6,lineHeight:1.5}}>{lang==="id"?item.desc:item.descEn}</div>
+                  <PreattentiveDemo item={item} lang={lang}/>
+                  {item.tipId && (
+                    <div style={{marginTop:8,background:"#F5F3FF",border:"1px solid #DDD6FE",borderRadius:7,padding:"7px 10px"}}>
+                      <div style={{fontSize:10,fontWeight:700,color:"#6D28D9",marginBottom:3}}>💡 {lang==="id"?"Cara pakai":"How to use"}</div>
+                      <div style={{fontSize:11,color:"#5B21B6",lineHeight:1.6}}>{lang==="id"?item.tipId:item.tipEn}</div>
+                    </div>
+                  )}
+                  {item.whenId && (
+                    <div style={{display:"flex",gap:6,marginTop:6,flexWrap:"wrap"}}>
+                      <div style={{flex:1,minWidth:120,background:"#EDE9FE",borderRadius:6,padding:"5px 8px"}}>
+                        <div style={{fontSize:9,fontWeight:700,color:"#6D28D9",textTransform:"uppercase",marginBottom:2}}>✓ {lang==="id"?"Kapan":"When"}</div>
+                        <div style={{fontSize:10,color:"#4C1D95",lineHeight:1.4}}>{lang==="id"?item.whenId:item.whenEn}</div>
+                      </div>
+                      <div style={{flex:1,minWidth:120,background:"#FEF2F2",borderRadius:6,padding:"5px 8px"}}>
+                        <div style={{fontSize:9,fontWeight:700,color:"#DC2626",textTransform:"uppercase",marginBottom:2}}>✕ {lang==="id"?"Hindari":"Avoid"}</div>
+                        <div style={{fontSize:10,color:"#991B1B",lineHeight:1.4}}>{lang==="id"?item.avoidId:item.avoidEn}</div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </SCard>
@@ -1882,7 +2169,7 @@ export default function App() {
     document.getElementById('ib-x')?.addEventListener('click',()=>{b.classList.remove('show');localStorage.setItem('hv_dis','1');});
     window.addEventListener('appinstalled',()=>b.classList.remove('show'));
     if('serviceWorker' in navigator){
-      const sw=`const C='hv-v11';self.addEventListener('install',e=>{self.skipWaiting();});self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener('fetch',e=>{if(e.request.url.includes('api.anthropic.com')||e.request.url.includes('fonts.g')||e.request.url.includes('unpkg.com'))return;e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request))));});`;
+      const sw=`const C='hv-v12';self.addEventListener('install',e=>{self.skipWaiting();});self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener('fetch',e=>{if(e.request.url.includes('api.anthropic.com')||e.request.url.includes('fonts.g')||e.request.url.includes('unpkg.com'))return;e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request))));});`;
       navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'application/javascript'}))).catch(()=>{});
     }
   </script>
