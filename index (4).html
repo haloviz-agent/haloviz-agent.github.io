@@ -1,0 +1,2177 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="theme-color" content="#0F172A"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Haloviz"/>
+  <title>Haloviz</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}html,body,#root{height:100%;}
+    body{font-family:'Plus Jakarta Sans',-apple-system,sans-serif;background:#F8FAFC;-webkit-tap-highlight-color:transparent;-webkit-font-smoothing:antialiased;overscroll-behavior:none;}
+    #ib{display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#0F172A;color:#fff;padding:10px 16px;border-radius:12px;font-size:13px;font-family:'Plus Jakarta Sans',sans-serif;z-index:9999;box-shadow:0 8px 24px rgba(0,0,0,0.3);align-items:center;gap:10px;max-width:440px;}
+    #ib button{background:#2563EB;color:#fff;border:none;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;}
+    #ib .d{background:none;border:none;color:#94A3B8;font-size:18px;cursor:pointer;}
+    #ib.show{display:flex;animation:su 0.3s ease;}
+    @keyframes su{from{opacity:0;transform:translateX(-50%) translateY(16px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <div id="ib"><span>📲 Install Haloviz ke HP</span><button id="ib-btn">Install</button><button class="d" id="ib-x">✕</button></div>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script type="text/babel" data-presets="react">
+import React, { useState, useEffect, useRef } from "react";
+
+const T = {
+  id: {
+    appName:"Haloviz", appTagline:"Panduan Visualisasi Data & Storytelling",
+    nav:{guide:"Panduan",board:"Board",recommend:"Rekomendasi",ask:"Tanya AI",illustrator:"Illustrator",improve:"Perbaiki",settings:"Pengaturan"},
+    settings:{title:"Pengaturan",apiKey:"Anthropic API Key",apiKeyPlaceholder:"sk-ant-...",apiKeyHint:"API key disimpan hanya di perangkat Anda (localStorage). Tidak dikirim ke server kami.",save:"Simpan",saved:"Tersimpan ✓",language:"Bahasa",clearData:"Hapus Semua Data Lokal",clearConfirm:"Yakin? Ini akan menghapus API key dan semua data board."},
+    guide:{title:"Panduan Visualisasi",subtitle:"Prinsip-prinsip dari data storytelling yang efektif",tabs:["Pilih Grafik","Warna","Preattentive"]},
+    board:{title:"Storytelling Board",subtitle:"Susun narasi data Anda secara visual",addCard:"Tambah Kartu",aiReview:"Review AI",aiGenerate:"Bantu AI",templates:"Template",useTemplate:"Pakai Template",
+      cardTypes:{hook:"Hook",context:"Konteks",insight:"Insight",chart:"Chart",action:"Aksi",conclusion:"Kesimpulan",situation:"Situasi",complication:"Komplikasi",question:"Pertanyaan Inti",answer:"Governing Thought",argument:"Argumen Kunci",evidence:"Bukti & Data"},
+      cardPh:{hook:"Mulai dengan pernyataan mengejutkan atau pertanyaan kuat...",context:"Berikan latar belakang dan data pendukung...",insight:"Temuan utama dari data Anda...",chart:"Deskripsikan chart yang akan digunakan...",action:"Rekomendasi atau langkah yang harus diambil...",conclusion:"Ringkasan dan pesan utama yang ingin disampaikan...",situation:"Fakta stabil yang sudah diketahui audiens — kondisi saat ini tanpa kontroversi...",complication:"Apa yang berubah? Mengapa situasi saat ini tidak lagi memadai?",question:"Pertanyaan yang secara alami muncul dari komplikasi di atas...",answer:"Jawaban langsung (Governing Thought): rekomendasi utama dalam satu kalimat...",argument:"Alasan/argumen kunci yang mendukung Governing Thought (MECE)...",evidence:"Data, angka, fakta, atau contoh konkret yang membuktikan argumen di atas..."},
+      aiContextLabel:"Konteks data / topik Anda",aiContextPh:"Contoh: Data penjualan Q3 2024, produk A menurun 20%, target: manajemen senior",
+      generateCards:"Generate Kartu",reviewBoard:"Review Board Saya",noKey:"Masukkan API key di Pengaturan untuk fitur AI.",
+      emptyBoard:"Board kosong. Tambah kartu atau pakai template untuk mulai.",
+      editCard:"Edit",doneEdit:"Selesai",moveUp:"↑",moveDown:"↓",
+      boardName:"Nama Board",boardNamePh:"Contoh: Laporan Penjualan Q3",
+      saveBoard:"Simpan",savedBoards:"Board Tersimpan",loadBoard:"Buka",deleteBoard:"Hapus",noSavedBoards:"Belum ada board tersimpan.",
+      aiAssistTitle:"Bantuan AI",reviewTitle:"Review Struktur Board",
+      pyramidMode:"Pyramid Principle (Minto)",classicMode:"Mode Klasik",
+      scqaTitle:"Analisis SCQA",pyramidLogicLabel:"Logika Pyramid",
+      situationLabel:"S — Situasi",complicationLabel:"C — Komplikasi",
+      questionLabel:"Q — Pertanyaan",answerLabel:"A — Governing Thought",
+      pyramidTip:"💡 Think bottom-up (evidence→argument→answer), communicate top-down (answer first).",
+      pyramidBadge:"🔺 Minto Pyramid",
+      whatIsTitle:"Apa itu Storytelling Board?",
+      whatIsDesc:"Alat untuk menyusun cerita dari data Anda secara terstruktur — mulai dari hook yang menarik perhatian, sampai kesimpulan yang mendorong aksi.",
+      exampleTitle:"Contoh: Laporan Penjualan Menurun",
+      showExample:"Lihat Contoh",hideExample:"Sembunyikan",
+    },
+    recommend:{title:"Rekomendasi Chart",subtitle:"Upload data CSV, AI rekomendasikan chart terbaik",paste:"Paste data CSV di sini...",analyze:"Analisis Data",noKey:"Tanpa API key, analisis berbasis aturan:",dropHint:"Drag & drop CSV, atau klik untuk pilih",chartPreview:"Preview Chart dari Data Anda"},
+    ask:{title:"Tanya tentang Grafik",subtitle:"Tanya apa saja tentang visualisasi data",placeholder:"Contoh: Kapan pakai scatter plot vs line chart?",send:"Kirim",noKey:"Aktifkan API key di Pengaturan untuk chat dengan AI.",clear:"Bersihkan",faqTitle:"FAQ Cepat",apiKeyNotice:"💡 Aktifkan API key di menu Pengaturan (⚙️) untuk mulai chat dengan AI."},
+    improve:{title:"Perbaiki Grafik",subtitle:"Upload gambar grafik, dapatkan saran perbaikan dari AI",dropHint:"Drag & drop gambar (PNG/JPG), atau klik untuk pilih",analyze:"Analisis & Beri Saran",noKey:"Fitur ini memerlukan Vision AI — masukkan API key di Pengaturan."},
+    illustrator:{title:"Chart Illustrator",subtitle:"Buat chart dari deskripsi AI atau input manual",descLabel:"Deskripsikan chart (mode AI)",descPh:"Contoh: Bar chart penjualan 5 produk: A 120jt, B 85jt, C 200jt, D 60jt, E 145jt. Judul: Perbandingan Penjualan Q3",chartType:"Tipe Chart",generate:"Generate via AI",manualInput:"Input Manual (Offline)",manualTitle:"Judul",manualLabels:"Label (pisah koma)",manualValues:"Nilai (pisah koma)",manualTitlePh:"Contoh: Penjualan Q3 2024",manualLabelsPh:"Contoh: Jan, Feb, Mar, Apr",manualValuesPh:"Contoh: 120, 85, 200, 60",renderManual:"Buat Chart",noKey:"Tanpa API key, gunakan Input Manual di bawah.",copySvg:"Copy SVG",copied:"Tersalin!",downloadSvg:"Download SVG",regenerate:"Generate Ulang",colorScheme:"Skema Warna",
+      colors:{blue:"Biru",green:"Hijau",orange:"Oranye",purple:"Ungu",mixed:"Multi"},
+      types:{auto:"Auto (AI Pilih)",bar:"Bar Chart",line:"Line Chart",pie:"Pie Chart",area:"Area Chart"},
+      apiKeyNotice:"💡 Aktifkan API key di Pengaturan untuk mode AI.",tip:"Mode AI: deskripsikan data dalam bahasa natural. Mode Offline: isi form di bawah.",},
+    common:{copy:"Salin",copied:"Tersalin!",error:"Terjadi kesalahan.",offline:"Offline",online:"AI Aktif"},
+  },
+  en: {
+    appName:"Haloviz", appTagline:"Data Visualization & Storytelling Guide",
+    nav:{guide:"Guide",board:"Board",recommend:"Recommend",ask:"Ask AI",illustrator:"Illustrator",improve:"Improve",settings:"Settings"},
+    settings:{title:"Settings",apiKey:"Anthropic API Key",apiKeyPlaceholder:"sk-ant-...",apiKeyHint:"API key stored only on your device (localStorage). Not sent to our servers.",save:"Save",saved:"Saved ✓",language:"Language",clearData:"Clear All Local Data",clearConfirm:"Sure? This deletes your API key and all board data."},
+    guide:{title:"Visualization Guide",subtitle:"Principles of effective data storytelling",tabs:["Choose Chart","Color","Preattentive"]},
+    board:{title:"Storytelling Board",subtitle:"Arrange your data narrative visually",addCard:"Add Card",aiReview:"AI Review",aiGenerate:"AI Assist",templates:"Templates",useTemplate:"Use Template",
+      cardTypes:{hook:"Hook",context:"Context",insight:"Insight",chart:"Chart",action:"Action",conclusion:"Conclusion",situation:"Situation",complication:"Complication",question:"Core Question",answer:"Governing Thought",argument:"Key Argument",evidence:"Evidence & Data"},
+      cardPh:{hook:"Start with a surprising statement or strong question...",context:"Provide background and supporting data...",insight:"Key finding from your data...",chart:"Describe the chart you will use...",action:"Recommendation or next steps...",conclusion:"Summary and main message to deliver...",situation:"Stable, uncontroversial background facts the audience already knows...",complication:"What changed? Why is the current situation no longer acceptable?",question:"The question that naturally arises from the complication above...",answer:"Direct answer (Governing Thought): the main recommendation in one sentence...",argument:"Key reason supporting the Governing Thought (MECE — no overlap, no gaps)...",evidence:"Data, numbers, facts, or concrete examples proving the argument above..."},
+      aiContextLabel:"Your data context / topic",aiContextPh:"e.g. Q3 2024 sales data, product A down 20%, audience: senior management",
+      generateCards:"Generate Cards",reviewBoard:"Review My Board",noKey:"Add API key in Settings to use AI features.",
+      emptyBoard:"Board is empty. Add a card or use a template to get started.",
+      editCard:"Edit",doneEdit:"Done",moveUp:"↑",moveDown:"↓",
+      boardName:"Board Name",boardNamePh:"e.g. Q3 Sales Report",
+      saveBoard:"Save",savedBoards:"Saved Boards",loadBoard:"Open",deleteBoard:"Delete",noSavedBoards:"No saved boards yet.",
+      aiAssistTitle:"AI Assistance",reviewTitle:"Board Structure Review",
+      pyramidMode:"Pyramid Principle (Minto)",classicMode:"Classic Mode",
+      scqaTitle:"SCQA Analysis",pyramidLogicLabel:"Pyramid Logic",
+      situationLabel:"S — Situation",complicationLabel:"C — Complication",
+      questionLabel:"Q — Question",answerLabel:"A — Governing Thought",
+      pyramidTip:"💡 Think bottom-up (evidence→argument→answer), communicate top-down (answer first).",
+      pyramidBadge:"🔺 Minto Pyramid",
+      whatIsTitle:"What is Storytelling Board?",
+      whatIsDesc:"A tool to structure your data story — from a compelling hook to a conclusion that drives action.",
+      exampleTitle:"Example: Declining Sales Report",
+      showExample:"See Example",hideExample:"Hide",
+    },
+    recommend:{title:"Chart Recommendation",subtitle:"Upload CSV data, AI recommends the best chart",paste:"Paste CSV data here...",analyze:"Analyze Data",noKey:"Without API key, rule-based analysis:",dropHint:"Drag & drop CSV, or click to select",chartPreview:"Chart Preview from Your Data"},
+    ask:{title:"Ask about Charts",subtitle:"Ask anything about data visualization",placeholder:"e.g. When should I use scatter plot vs line chart?",send:"Send",noKey:"Activate API key in Settings to chat with AI.",clear:"Clear",faqTitle:"Quick FAQ",apiKeyNotice:"💡 Activate API key in Settings (⚙️) to start chatting with AI."},
+    improve:{title:"Improve Your Chart",subtitle:"Upload a chart image and get AI improvement suggestions",dropHint:"Drag & drop image (PNG/JPG), or click to select",analyze:"Analyze & Suggest",noKey:"This feature requires Vision AI — add API key in Settings."},
+    illustrator:{title:"Chart Illustrator",subtitle:"Create charts from AI description or manual input",descLabel:"Describe chart (AI mode)",descPh:"e.g. Bar chart of 5 products: A 120M, B 85M, C 200M, D 60M, E 145M. Title: Q3 Sales Comparison",chartType:"Chart Type",generate:"Generate via AI",manualInput:"Manual Input (Offline)",manualTitle:"Title",manualLabels:"Labels (comma-separated)",manualValues:"Values (comma-separated)",manualTitlePh:"e.g. Q3 2024 Sales",manualLabelsPh:"e.g. Jan, Feb, Mar, Apr",manualValuesPh:"e.g. 120, 85, 200, 60",renderManual:"Create Chart",noKey:"Without API key, use Manual Input below.",copySvg:"Copy SVG",copied:"Copied!",downloadSvg:"Download SVG",regenerate:"Regenerate",colorScheme:"Color Scheme",
+      colors:{blue:"Blue",green:"Green",orange:"Orange",purple:"Purple",mixed:"Multi"},
+      types:{auto:"Auto (AI Picks)",bar:"Bar Chart",line:"Line Chart",pie:"Pie Chart",area:"Area Chart"},
+      apiKeyNotice:"💡 Activate API key in Settings for AI mode.",tip:"AI Mode: describe data in natural language. Offline Mode: fill the form below.",},
+    common:{copy:"Copy",copied:"Copied!",error:"An error occurred.",offline:"Offline",online:"AI Active"},
+  }
+};
+
+// ─── KNOWLEDGE BASE ───────────────────────────────────────────────────────────
+const CHART_GUIDE = [
+  { category:"Perbandingan", categoryEn:"Comparison", charts:[
+    { name:"Bar Chart", icon:"▊", when:"Membandingkan nilai antar kategori diskrit", whenEn:"Comparing values across discrete categories",
+      pros:["Mudah dibaca semua audiens","Efektif untuk banyak kategori","Mendukung ranking visual"], prosEn:["Easy to read for all","Effective for many categories","Supports visual ranking"],
+      avoid:"Jangan pakai untuk time-series panjang (>12 titik)", avoidEn:"Don't use for long time-series (>12 points)", color:"#2563EB",
+      svg:'<svg width="200" height="110" xmlns="http://www.w3.org/2000/svg"><rect x="10" y="60" width="28" height="40" rx="3" fill="#2563EB"/><text x="24" y="56" font-size="9" text-anchor="middle" fill="#2563EB" font-weight="600">120</text><text x="24" y="108" font-size="8" text-anchor="middle" fill="#94A3B8">A</text><rect x="48" y="40" width="28" height="60" rx="3" fill="#3B82F6"/><text x="62" y="36" font-size="9" text-anchor="middle" fill="#3B82F6" font-weight="600">180</text><text x="62" y="108" font-size="8" text-anchor="middle" fill="#94A3B8">B</text><rect x="86" y="15" width="28" height="85" rx="3" fill="#1D4ED8"/><text x="100" y="11" font-size="9" text-anchor="middle" fill="#1D4ED8" font-weight="600">255</text><text x="100" y="108" font-size="8" text-anchor="middle" fill="#94A3B8">C</text><rect x="124" y="50" width="28" height="50" rx="3" fill="#60A5FA"/><text x="138" y="46" font-size="9" text-anchor="middle" fill="#60A5FA" font-weight="600">150</text><text x="138" y="108" font-size="8" text-anchor="middle" fill="#94A3B8">D</text><rect x="162" y="30" width="28" height="70" rx="3" fill="#93C5FD"/><text x="176" y="26" font-size="9" text-anchor="middle" fill="#64748B" font-weight="600">210</text><text x="176" y="108" font-size="8" text-anchor="middle" fill="#94A3B8">E</text><line x1="5" y1="100" x2="200" y2="100" stroke="#E2E8F0" stroke-width="1"/></svg>'},
+    { name:"Dot Plot", icon:"●", when:"Membandingkan banyak item — lebih bersih dari bar", whenEn:"Comparing many items — cleaner than bar chart",
+      pros:["Lebih minimalis","Bagus untuk range/interval","Tidak menipu ukuran"], prosEn:["More minimalist","Good for ranges","Doesn't mislead with size"],
+      avoid:"Kurang familiar bagi audiens umum", avoidEn:"Less familiar to general audiences", color:"#0891B2",
+      svg:'<svg width="200" height="110" xmlns="http://www.w3.org/2000/svg"><line x1="45" y1="15" x2="45" y2="100" stroke="#E2E8F0" stroke-width="1"/><text x="40" y="28" font-size="8" text-anchor="end" fill="#94A3B8">A</text><line x1="45" y1="25" x2="155" y2="25" stroke="#E2E8F0" stroke-width="1" stroke-dasharray="2,2"/><circle cx="155" cy="25" r="5" fill="#0891B2"/><text x="40" y="50" font-size="8" text-anchor="end" fill="#94A3B8">B</text><line x1="45" y1="47" x2="105" y2="47" stroke="#E2E8F0" stroke-width="1" stroke-dasharray="2,2"/><circle cx="105" cy="47" r="5" fill="#0891B2"/><text x="40" y="72" font-size="8" text-anchor="end" fill="#94A3B8">C</text><line x1="45" y1="69" x2="175" y2="69" stroke="#E2E8F0" stroke-width="1" stroke-dasharray="2,2"/><circle cx="175" cy="69" r="5" fill="#0891B2"/><text x="40" y="94" font-size="8" text-anchor="end" fill="#94A3B8">D</text><line x1="45" y1="91" x2="80" y2="91" stroke="#E2E8F0" stroke-width="1" stroke-dasharray="2,2"/><circle cx="80" cy="91" r="5" fill="#0891B2"/></svg>'},
+  ]},
+  { category:"Tren & Waktu", categoryEn:"Trend & Time", charts:[
+    { name:"Line Chart", icon:"↗", when:"Perubahan nilai dari waktu ke waktu", whenEn:"Value changes over time",
+      pros:["Tren naik/turun sangat jelas","Bisa multi-series","Sangat familiar"], prosEn:["Trends very clear","Supports multi-series","Very familiar"],
+      avoid:"Jangan pakai untuk data kategorikal tanpa urutan waktu", avoidEn:"Don't use for categorical data without time order", color:"#10B981",
+      svg:'<svg width="200" height="110" xmlns="http://www.w3.org/2000/svg"><polygon points="15,85 50,65 85,70 120,40 155,25 190,15 190,100 15,100" fill="#10B981" fill-opacity="0.08"/><polyline points="15,85 50,65 85,70 120,40 155,25 190,15" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/><circle cx="15" cy="85" r="4" fill="#10B981" stroke="#fff" stroke-width="2"/><circle cx="50" cy="65" r="4" fill="#10B981" stroke="#fff" stroke-width="2"/><circle cx="85" cy="70" r="4" fill="#10B981" stroke="#fff" stroke-width="2"/><circle cx="120" cy="40" r="4" fill="#10B981" stroke="#fff" stroke-width="2"/><circle cx="155" cy="25" r="4" fill="#10B981" stroke="#fff" stroke-width="2"/><circle cx="190" cy="15" r="4" fill="#10B981" stroke="#fff" stroke-width="2"/><line x1="8" y1="100" x2="198" y2="100" stroke="#E2E8F0" stroke-width="1"/><text x="15" y="110" font-size="8" text-anchor="middle" fill="#94A3B8">Jan</text><text x="85" y="110" font-size="8" text-anchor="middle" fill="#94A3B8">Mar</text><text x="155" y="110" font-size="8" text-anchor="middle" fill="#94A3B8">May</text></svg>'},
+    { name:"Slope Chart", icon:"╱", when:"Perubahan antara tepat dua titik waktu", whenEn:"Change between exactly two time points",
+      pros:["Naik/turun langsung jelas","Minimalis dan bersih"], prosEn:["Rise/fall immediately clear","Minimalist and clean"],
+      avoid:"Hanya efektif untuk 2 titik waktu, tidak lebih", avoidEn:"Only effective for exactly 2 time points", color:"#0284C7",
+      svg:'<svg width="200" height="110" xmlns="http://www.w3.org/2000/svg"><line x1="50" y1="10" x2="50" y2="105" stroke="#E2E8F0" stroke-width="1"/><line x1="150" y1="10" x2="150" y2="105" stroke="#E2E8F0" stroke-width="1"/><text x="50" y="8" font-size="8" text-anchor="middle" fill="#64748B">2022</text><text x="150" y="8" font-size="8" text-anchor="middle" fill="#64748B">2024</text><line x1="50" y1="35" x2="150" y2="18" stroke="#0284C7" stroke-width="2"/><circle cx="50" cy="35" r="4" fill="#0284C7"/><circle cx="150" cy="18" r="4" fill="#0284C7"/><text x="44" y="35" font-size="8" text-anchor="end" fill="#0284C7">A ↑</text><line x1="50" y1="55" x2="150" y2="75" stroke="#EF4444" stroke-width="2"/><circle cx="50" cy="55" r="4" fill="#EF4444"/><circle cx="150" cy="75" r="4" fill="#EF4444"/><text x="44" y="55" font-size="8" text-anchor="end" fill="#EF4444">B ↓</text><line x1="50" y1="78" x2="150" y2="52" stroke="#10B981" stroke-width="2"/><circle cx="50" cy="78" r="4" fill="#10B981"/><circle cx="150" cy="52" r="4" fill="#10B981"/><text x="44" y="78" font-size="8" text-anchor="end" fill="#10B981">C ↑</text></svg>'},
+  ]},
+  { category:"Komposisi", categoryEn:"Composition", charts:[
+    { name:"Stacked Bar", icon:"▤", when:"Bagian dari keseluruhan antar beberapa kategori", whenEn:"Part-to-whole across multiple categories",
+      pros:["Total dan komposisi sekaligus","Tren komposisi antar kategori jelas"], prosEn:["Total and composition at once","Composition trends across categories"],
+      avoid:"Susah membandingkan segmen di tengah", avoidEn:"Hard to compare middle segments", color:"#D97706",
+      svg:'<svg width="200" height="110" xmlns="http://www.w3.org/2000/svg"><rect x="15" y="25" width="28" height="25" fill="#2563EB"/><rect x="15" y="50" width="28" height="30" fill="#60A5FA"/><rect x="15" y="80" width="28" height="18" fill="#BFDBFE"/><rect x="55" y="15" width="28" height="30" fill="#2563EB"/><rect x="55" y="45" width="28" height="35" fill="#60A5FA"/><rect x="55" y="80" width="28" height="18" fill="#BFDBFE"/><rect x="95" y="35" width="28" height="20" fill="#2563EB"/><rect x="95" y="55" width="28" height="25" fill="#60A5FA"/><rect x="95" y="80" width="28" height="18" fill="#BFDBFE"/><rect x="135" y="20" width="28" height="35" fill="#2563EB"/><rect x="135" y="55" width="28" height="25" fill="#60A5FA"/><rect x="135" y="80" width="28" height="18" fill="#BFDBFE"/><line x1="8" y1="98" x2="175" y2="98" stroke="#E2E8F0" stroke-width="1"/></svg>'},
+    { name:"Pie Chart", icon:"◔", when:"Proporsi (maksimal 2–4 slice)", whenEn:"Proportions (maximum 2–4 slices)",
+      pros:["Sangat familiar","Efektif untuk 2 slice (ya/tidak)"], prosEn:["Very familiar","Effective for 2 slices (yes/no)"],
+      avoid:"HINDARI jika >4 slice, perlu presisi, atau nilai mirip", avoidEn:"AVOID if >4 slices, precision needed, or similar values", color:"#EF4444", warning:true,
+      svg:'<svg width="200" height="110" xmlns="http://www.w3.org/2000/svg"><path d="M100,55 L100,10 A45,45 0 1,1 60,87 Z" fill="#2563EB"/><path d="M100,55 L60,87 A45,45 0 0,1 100,10 Z" fill="#EF4444"/><text x="95" y="45" font-size="11" fill="#fff" font-weight="700">68%</text><text x="63" y="82" font-size="11" fill="#fff" font-weight="700">32%</text><rect x="20" y="100" width="8" height="8" rx="1" fill="#2563EB"/><text x="32" y="108" font-size="8" fill="#64748B">Ya/Yes</text><rect x="80" y="100" width="8" height="8" rx="1" fill="#EF4444"/><text x="92" y="108" font-size="8" fill="#64748B">Tidak/No</text></svg>'},
+  ]},
+  { category:"Distribusi & Hubungan", categoryEn:"Distribution & Relationship", charts:[
+    { name:"Histogram", icon:"▐▌", when:"Distribusi frekuensi satu variabel numerik", whenEn:"Frequency distribution of one numeric variable",
+      pros:["Distribusi dan outlier langsung terlihat","Deteksi skewness"], prosEn:["Distribution and outliers immediately visible","Detects skewness"],
+      avoid:"Sensitif terhadap pilihan bin size", avoidEn:"Very sensitive to bin size choice", color:"#0891B2",
+      svg:'<svg width="200" height="110" xmlns="http://www.w3.org/2000/svg"><rect x="12" y="92" width="22" height="8" rx="1" fill="#0891B2" fill-opacity="0.3"/><rect x="37" y="72" width="22" height="28" rx="1" fill="#0891B2" fill-opacity="0.5"/><rect x="62" y="42" width="22" height="58" rx="1" fill="#0891B2"/><rect x="87" y="32" width="22" height="68" rx="1" fill="#0891B2"/><rect x="112" y="52" width="22" height="48" rx="1" fill="#0891B2" fill-opacity="0.8"/><rect x="137" y="78" width="22" height="22" rx="1" fill="#0891B2" fill-opacity="0.5"/><rect x="162" y="97" width="22" height="3" rx="1" fill="#0891B2" fill-opacity="0.2"/><line x1="8" y1="100" x2="192" y2="100" stroke="#E2E8F0" stroke-width="1"/></svg>'},
+    { name:"Scatter Plot", icon:"⁚", when:"Korelasi antara dua variabel numerik", whenEn:"Correlation between two numeric variables",
+      pros:["Korelasi dan outlier langsung terlihat","Bisa tambah dimensi ke-3 via warna/ukuran"], prosEn:["Correlation and outliers immediately visible","Can add 3rd dimension via color/size"],
+      avoid:"Sulit dibaca jika data padat (overplotting)", avoidEn:"Hard to read with dense data (overplotting)", color:"#EC4899",
+      svg:'<svg width="200" height="110" xmlns="http://www.w3.org/2000/svg"><line x1="20" y1="10" x2="20" y2="100" stroke="#E2E8F0" stroke-width="1.5"/><line x1="20" y1="100" x2="195" y2="100" stroke="#E2E8F0" stroke-width="1.5"/><line x1="30" y1="92" x2="188" y2="18" stroke="#94A3B8" stroke-width="1" stroke-dasharray="3,3"/><circle cx="38" cy="88" r="4" fill="#EC4899" fill-opacity="0.7"/><circle cx="58" cy="73" r="5" fill="#EC4899" fill-opacity="0.7"/><circle cx="78" cy="75" r="3" fill="#EC4899" fill-opacity="0.7"/><circle cx="98" cy="52" r="6" fill="#EC4899" fill-opacity="0.7"/><circle cx="112" cy="57" r="4" fill="#EC4899" fill-opacity="0.7"/><circle cx="132" cy="42" r="5" fill="#EC4899" fill-opacity="0.7"/><circle cx="152" cy="32" r="3" fill="#EC4899" fill-opacity="0.7"/><circle cx="170" cy="22" r="6" fill="#EC4899" fill-opacity="0.7"/><circle cx="185" cy="28" r="4" fill="#EC4899" fill-opacity="0.7"/></svg>'},
+  ]},
+];
+
+const COLOR_GUIDE = [
+  {title:"Gunakan Warna Secara Bermakna",titleEn:"Use Color with Meaning",desc:"Warna harus encode informasi, bukan dekorasi. Mulai abu-abu, highlight hanya poin utama.",descEn:"Color must encode information, not decoration. Start gray, highlight only the key point.",icon:"🎯",palette:["#2563EB","#CBD5E1","#CBD5E1","#CBD5E1","#CBD5E1"]},
+  {title:"Maksimal 6 Warna Kategoris",titleEn:"Maximum 6 Categorical Colors",desc:"Otak manusia kesulitan membedakan lebih dari 6 warna sekaligus.",descEn:"Human brain struggles to distinguish more than 6 colors at once.",icon:"🧠",palette:["#2563EB","#10B981","#F59E0B","#EF4444","#8B5CF6","#EC4899"]},
+  {title:"Perhatikan Aksesibilitas",titleEn:"Consider Accessibility",desc:"~8% pria buta warna merah-hijau. Jangan andalkan warna saja — tambahkan label/pola.",descEn:"~8% of men have red-green blindness. Don't rely on color alone — add labels/patterns.",icon:"♿",palette:["#2563EB","#F59E0B","#0891B2","#D97706"]},
+  {title:"Sequential vs Diverging vs Categorical",titleEn:"Sequential vs Diverging vs Categorical",desc:"Sequential: rendah→tinggi. Diverging: ada titik netral. Categorical: kategori berbeda.",descEn:"Sequential: low→high. Diverging: neutral midpoint. Categorical: different categories.",icon:"🌈",palettes:{Sequential:["#EFF6FF","#BFDBFE","#3B82F6","#1D4ED8","#1E3A8A"],Diverging:["#DC2626","#FCA5A5","#F3F4F6","#86EFAC","#16A34A"],Categorical:["#2563EB","#10B981","#F59E0B","#EF4444","#8B5CF6"]}},
+  {title:"Abu-abu sebagai Dasar",titleEn:"Gray as the Base",desc:"Mulai dengan abu-abu untuk semua data, lalu gunakan warna hanya untuk highlight poin utama.",descEn:"Start with gray for all data, then use color only to highlight the main story point.",icon:"⬜",palette:["#CBD5E1","#CBD5E1","#CBD5E1","#2563EB","#CBD5E1"]},
+];
+
+const PREATTENTIVE = [
+  {attr:"Warna (Hue)",attrEn:"Color (Hue)",
+   desc:"Paling kuat untuk membedakan kategori. Mata langsung tertuju pada elemen dengan warna berbeda.",
+   descEn:"Most powerful for differentiating categories. Eyes immediately drawn to elements with different color.",
+   tipId:"Gunakan maksimal 6 warna kategoris. Mulai dari abu-abu untuk semua data, lalu beri warna hanya pada elemen terpenting. Pastikan palette ramah buta warna — hindari mengandalkan merah vs hijau saja, karena ~8% pria tidak dapat membedakannya.",
+   tipEn:"Use maximum 6 categorical colors. Start with gray for all data, then color only the most important element. Ensure palette is colorblind-friendly — avoid relying solely on red vs green, as ~8% of men cannot distinguish them.",
+   whenId:"Membedakan 2–6 kategori diskrit pada chart",
+   whenEn:"Differentiating 2–6 discrete categories on a chart",
+   avoidId:"Lebih dari 6 warna sekaligus; merah+hijau saja tanpa perbedaan lain",
+   avoidEn:"More than 6 colors at once; red+green only without other differences",
+   type:"color",icon:"🔴",lblId:"← warna beda langsung terlihat",lblEn:"← different color spotted instantly"},
+
+  {attr:"Intensitas Warna",attrEn:"Color Intensity",
+   desc:"Ideal untuk menunjukkan magnitude atau skala dari rendah ke tinggi.",
+   descEn:"Ideal for showing magnitude or scale from low to high.",
+   tipId:"Gunakan satu warna dengan gradasi terang→gelap (sequential palette) untuk heatmap, choropleth, atau bubble chart. Jangan gunakan intensitas untuk membedakan kategori — itu tugas warna hue. Diverging palette (biru↔merah) cocok bila ada nilai nol/netral sebagai titik tengah.",
+   tipEn:"Use one color grading light→dark (sequential palette) for heatmaps, choropleths, or bubble charts. Don't use intensity to differentiate categories — that's the job of hue. Use diverging palette (blue↔red) when there's a neutral zero/midpoint value.",
+   whenId:"Heatmap, choropleth, atau skala nilai kontinu",
+   whenEn:"Heatmaps, choropleths, or continuous value scales",
+   avoidId:"Untuk membedakan kategori (pakai hue); gradasi yang terlalu halus sehingga susah dibedakan",
+   avoidEn:"For differentiating categories (use hue instead); gradients too subtle to distinguish",
+   type:"intensity",icon:"◐",lblId:"intensitas → magnitude",lblEn:"intensity → magnitude"},
+
+  {attr:"Posisi",attrEn:"Position",
+   desc:"Paling akurat untuk membandingkan nilai. Dasar dari bar chart dan scatter plot.",
+   descEn:"Most accurate for comparing values. Foundation of bar charts and scatter plots.",
+   tipId:"Selalu mulai axis bar chart dari nol — memulai dari nilai lain mendistorsi persepsi perbedaan. Beri whitespace yang cukup sehingga posisi antar elemen mudah dibandingkan. Pada scatter plot, gunakan aspek rasio 1:1 agar korelasi tidak misleading.",
+   tipEn:"Always start bar chart axis at zero — starting from other values distorts perceived differences. Give enough whitespace so positions are easy to compare. In scatter plots, use 1:1 aspect ratio so correlations aren't misleading.",
+   whenId:"Perbandingan nilai: bar chart, scatter plot, dot plot, line chart",
+   whenEn:"Value comparison: bar charts, scatter plots, dot plots, line charts",
+   avoidId:"Axis yang dipotong (truncated); aspek rasio yang misleading pada scatter plot",
+   avoidEn:"Truncated axes; misleading aspect ratios on scatter plots",
+   type:"position",icon:"📍",lblId:"posisi = perbandingan paling akurat",lblEn:"position = most accurate comparison"},
+
+  {attr:"Ukuran",attrEn:"Size",
+   desc:"Efektif untuk magnitude, tapi kurang presisi. Gunakan untuk perkiraan, bukan nilai eksak.",
+   descEn:"Effective for magnitude but less precise. Use for estimates, not exact values.",
+   tipId:"Encode area (bukan diameter atau jari-jari) agar proporsi akurat. Bubble dengan diameter 2× bukan berarti nilai 2× — areanya 4×. Selalu tambahkan label nilai langsung di elemen karena mata manusia kurang akurat membaca ukuran relatif.",
+   tipEn:"Encode area (not diameter or radius) for accurate proportions. A bubble with 2× diameter does not mean 2× value — its area is 4×. Always add value labels directly on elements since human eyes are less accurate at reading relative sizes.",
+   whenId:"Bubble chart, treemap, proportional symbols map",
+   whenEn:"Bubble charts, treemaps, proportional symbol maps",
+   avoidId:"Encoding diameter/radius bukan area; tanpa label nilai untuk perbandingan presisi",
+   avoidEn:"Encoding diameter/radius instead of area; no value labels when precise comparison is needed",
+   type:"size",icon:"⬛",lblId:"ukuran besar = nilai besar",lblEn:"larger size = larger value"},
+
+  {attr:"Bentuk",attrEn:"Shape",
+   desc:"Berguna untuk membedakan kategori di scatter plot. Kombinasikan dengan warna untuk efek terbaik.",
+   descEn:"Useful for differentiating categories in scatter plots. Combine with color for best effect.",
+   tipId:"Gunakan maksimal 5 bentuk berbeda — lebih dari itu sulit diingat. Pilih bentuk yang jelas berbeda satu sama lain: lingkaran, segitiga, persegi, berlian, dan silang. Selalu kombinasikan dengan warna agar tetap terbaca oleh pengguna buta warna.",
+   tipEn:"Use maximum 5 different shapes — more than that is hard to remember. Choose clearly distinct shapes: circle, triangle, square, diamond, and cross. Always combine with color so it remains readable for colorblind users.",
+   whenId:"Scatter plot dengan beberapa kategori; dikombinasikan dengan warna",
+   whenEn:"Scatter plots with multiple categories; combined with color",
+   avoidId:"Lebih dari 5 bentuk; bentuk yang terlalu mirip; mengandalkan bentuk tanpa warna",
+   avoidEn:"More than 5 shapes; shapes that look too similar; relying on shape alone without color",
+   type:"shape",icon:"△",lblId:"bentuk beda = kategori beda",lblEn:"different shape = different category"},
+
+  {attr:"Orientasi",attrEn:"Orientation",
+   desc:"Membedakan kelompok, gunakan dengan hati-hati agar tidak membingungkan.",
+   descEn:"Can differentiate groups, use carefully to avoid confusion.",
+   tipId:"Pastikan perbedaan orientasi cukup besar (minimal 30°) agar mudah dibedakan. Paling sering digunakan pada peta (wind direction, flow) atau texture. Jarang berdiri sendiri — kombinasikan dengan warna atau bentuk untuk aksesibilitas yang lebih baik.",
+   tipEn:"Ensure orientation differences are large enough (at least 30°) to be distinguishable. Most commonly used on maps (wind direction, flow) or textures. Rarely stands alone — combine with color or shape for better accessibility.",
+   whenId:"Peta arah angin/aliran; texture pattern; dikombinasikan dengan atribut lain",
+   whenEn:"Wind/flow direction maps; texture patterns; combined with other attributes",
+   avoidId:"Perbedaan orientasi kecil (<30°); lebih dari 4 orientasi berbeda",
+   avoidEn:"Small orientation differences (<30°); more than 4 different orientations",
+   type:"orientation",icon:"↗",lblId:"orientasi beda = grup beda",lblEn:"different orientation = different group"},
+
+  {attr:"Enclosure",attrEn:"Enclosure",
+   desc:"Kotak di sekitar elemen langsung memberi kesan satu grup. Efektif untuk grouping.",
+   descEn:"Box around elements immediately signals one group. Effective for grouping.",
+   tipId:"Sangat efektif untuk highlight area penting pada chart (shaded region, annotation box). Gunakan border tipis atau background subtle — tidak perlu bold agar tidak mendominasi. Hindari lebih dari 2 level nesting enclosure karena hierarki jadi sulit dipahami.",
+   tipEn:"Very effective for highlighting important areas on charts (shaded regions, annotation boxes). Use thin borders or subtle backgrounds — no need for bold style so it doesn't dominate. Avoid more than 2 nesting levels as the hierarchy becomes hard to understand.",
+   whenId:"Highlight area, annotation box, grouping elemen pada tabel atau chart",
+   whenEn:"Highlighted areas, annotation boxes, grouping elements in tables or charts",
+   avoidId:"Lebih dari 2 level nesting; enclosure yang terlalu tebal sehingga mendominasi data",
+   avoidEn:"More than 2 nesting levels; enclosures too bold that they dominate the data",
+   type:"enclosure",icon:"⬡",lblId:"kotak = satu grup",lblEn:"box = one group"},
+
+  {attr:"Koneksi",attrEn:"Connection",
+   desc:"Garis yang menghubungkan dua titik langsung menunjukkan relasi. Dasar dari line chart.",
+   descEn:"Lines connecting points immediately show a relationship. Foundation of line charts.",
+   tipId:"Gunakan garis tipis untuk koneksi umum, lebih tebal untuk relasi yang kuat atau penting. Batasi jumlah koneksi yang ditampilkan — terlalu banyak garis menciptakan 'spaghetti chart' yang tidak terbaca. Pada line chart, urutan waktu harus selalu dari kiri ke kanan.",
+   tipEn:"Use thin lines for general connections, thicker for strong or important relationships. Limit the number of connections shown — too many lines create an unreadable 'spaghetti chart'. In line charts, time order must always run left to right.",
+   whenId:"Line chart, network diagram, flow chart, Sankey diagram",
+   whenEn:"Line charts, network diagrams, flow charts, Sankey diagrams",
+   avoidId:"Terlalu banyak koneksi (spaghetti chart); garis yang bersilangan tanpa penanda jelas",
+   avoidEn:"Too many connections (spaghetti chart); crossing lines without clear markers",
+   type:"connection",icon:"—",lblId:"garis = relasi langsung terlihat",lblEn:"line = relationship immediately visible"},
+
+  // ── Text-based Preattentive Attributes ────────────────────────────────────
+  {attr:"Tebal (Bold)",attrEn:"Bold",
+   desc:"Kata atau angka yang ditebalkan langsung menonjol dari teks biasa tanpa mengubah layout.",
+   descEn:"Bolded words or numbers immediately stand out from regular text without changing the layout.",
+   tipId:"Gunakan bold untuk kata kunci, angka penting, atau nama yang perlu diingat pembaca. Jangan bold lebih dari 10–15% teks — semakin sedikit yang di-bold, semakin kuat efeknya. Ideal untuk laporan, slide, atau tabel naratif.",
+   tipEn:"Use bold for key terms, important numbers, or names readers need to remember. Don't bold more than 10–15% of text — the less bolded, the stronger the effect. Ideal for reports, slides, or narrative tables.",
+   whenId:"Menandai angka kunci, istilah penting, nama metrik dalam narasi teks",
+   whenEn:"Marking key numbers, important terms, metric names in narrative text",
+   avoidId:"Bold terlalu banyak kata — efek jadi hilang karena semua tampak sama penting",
+   avoidEn:"Bolding too many words — the effect disappears when everything looks equally important",
+   type:"txt_bold",icon:"B",lblId:"",lblEn:""},
+
+  {attr:"Miring (Italic)",attrEn:"Italic",
+   desc:"Teks miring memberi penekanan lebih halus dari bold, cocok untuk istilah atau kutipan.",
+   descEn:"Italic gives softer emphasis than bold, suitable for terms, quotes, or secondary highlights.",
+   tipId:"Gunakan italic untuk istilah teknis, judul, kutipan, atau penekanan sekunder. Efeknya lebih halus dari bold — bagus untuk hierarki penekanan: bold untuk paling penting, italic untuk penting berikutnya. Hindari italic untuk teks panjang karena melelahkan mata.",
+   tipEn:"Use italic for technical terms, titles, quotes, or secondary emphasis. Its effect is softer than bold — good for emphasis hierarchy: bold for most important, italic for next level. Avoid italic for long passages as it strains the eyes.",
+   whenId:"Istilah teknis, judul karya, kutipan, penekanan sekunder",
+   whenEn:"Technical terms, work titles, quotes, secondary emphasis",
+   avoidId:"Teks paragraf panjang dalam italic; kombinasi italic+bold berlebihan",
+   avoidEn:"Long paragraph text in italic; excessive italic+bold combinations",
+   type:"txt_italic",icon:"I",lblId:"",lblEn:""},
+
+  {attr:"Ukuran Font",attrEn:"Font Size",
+   desc:"Teks yang lebih besar langsung menarik mata — paling kuat untuk headline atau angka KPI.",
+   descEn:"Larger text immediately attracts the eye — most powerful for headlines or KPI numbers.",
+   tipId:"Gunakan ukuran font jauh lebih besar (2–3× lipat) untuk angka KPI utama atau insight terpenting — bukan sedikit lebih besar. Perbedaan kecil tidak cukup preattentive. Dalam slide eksekutif, satu angka besar + teks penjelasan kecil lebih efektif dari banyak angka berukuran sama.",
+   tipEn:"Use font size significantly larger (2–3×) for key KPI numbers or the most important insight — not just slightly larger. Small differences aren't preattentive enough. In executive slides, one large number + small explanatory text is more effective than many same-sized numbers.",
+   whenId:"Angka KPI utama, headline insight, big number pada dashboard atau slide",
+   whenEn:"Key KPI numbers, insight headlines, big numbers on dashboards or slides",
+   avoidId:"Perbedaan ukuran terlalu kecil (<20%); menggunakan ukuran besar untuk banyak elemen",
+   avoidEn:"Differences too small (<20%); using large size for many elements simultaneously",
+   type:"txt_size",icon:"A",lblId:"",lblEn:""},
+
+  {attr:"Warna Teks",attrEn:"Text Color",
+   desc:"Satu kalimat atau kata berwarna di antara teks abu-abu langsung menjadi fokus.",
+   descEn:"One colored word or sentence among gray text immediately becomes the focus.",
+   tipId:"Gunakan warna teks untuk highlight insight paling penting dalam narasi. Sisanya buat abu-abu — kontras inilah yang menciptakan efek preattentive. Pilih 1 warna highlight saja per dokumen, dan gunakan warna yang sama konsisten untuk kategori yang sama.",
+   tipEn:"Use text color to highlight the most important insight in a narrative. Make the rest gray — this contrast creates the preattentive effect. Choose only 1 highlight color per document, and use the same color consistently for the same category.",
+   whenId:"Highlight satu temuan kunci dalam narasi; color-coding kategori dalam teks",
+   whenEn:"Highlighting one key finding in narrative; color-coding categories within text",
+   avoidId:"Lebih dari 2 warna berbeda dalam satu paragraf; warna yang terlalu terang atau terlalu lemah kontrasnya",
+   avoidEn:"More than 2 different colors in one paragraph; colors too bright or with too little contrast",
+   type:"txt_color",icon:"A",lblId:"",lblEn:""},
+
+  {attr:"Garis Bawah (Underline)",attrEn:"Underline",
+   desc:"Garis bawah menambahkan tanda visual langsung di bawah teks penting.",
+   descEn:"Underline adds a visual mark directly below important text.",
+   tipId:"Gunakan underline hemat — hanya untuk 1–2 frasa paling kritis. Hindari underline pada hyperlink yang tidak aktif karena audiens akan mengira itu link. Lebih baik pilih bold atau warna teks yang lebih kuat efek preattentive-nya. Underline paling efektif di tabel dan dokumen cetak.",
+   tipEn:"Use underline sparingly — only for 1–2 most critical phrases. Avoid underline on inactive hyperlinks as the audience will think it's a link. Bold or text color is usually more effective preattentively. Underline works best in tables and printed documents.",
+   whenId:"Tabel, dokumen cetak, highlight frasa singkat yang kritis",
+   whenEn:"Tables, printed documents, highlighting short critical phrases",
+   avoidId:"Underline panjang yang tampak seperti hyperlink; menggunakan underline untuk dekorasi",
+   avoidEn:"Long underlines that look like hyperlinks; using underline as decoration",
+   type:"txt_underline",icon:"U",lblId:"",lblEn:""},
+
+  {attr:"Pemisahan Spasial",attrEn:"Spatial Separation",
+   desc:"Whitespace dan jarak antar elemen secara visual memisahkan dan mengelompokkan informasi.",
+   descEn:"Whitespace and spacing between elements visually separates and groups information.",
+   tipId:"Proximity law (hukum Gestalt): elemen yang dekat dianggap satu kelompok. Gunakan whitespace untuk memisahkan ide berbeda dan mendekatkan informasi yang berkaitan. Dalam tabel, spasi antar baris atau pemisah kolom membantu pembaca scan data lebih cepat.",
+   tipEn:"Proximity law (Gestalt): elements that are close are perceived as one group. Use whitespace to separate different ideas and bring related information closer. In tables, row spacing or column separators help readers scan data faster.",
+   whenId:"Paragraf narasi, tabel, slide — memisahkan kelompok informasi berbeda",
+   whenEn:"Narrative paragraphs, tables, slides — separating different information groups",
+   avoidId:"Whitespace tidak konsisten; terlalu banyak whitespace yang membuat konten tampak tidak terhubung",
+   avoidEn:"Inconsistent whitespace; too much whitespace making content appear unrelated",
+   type:"txt_spatial",icon:"⎵",lblId:"",lblEn:""},
+
+  {attr:"Enclosure Teks",attrEn:"Text Enclosure",
+   desc:"Kotak atau highlight di sekitar teks langsung menandai frasa tersebut sebagai penting.",
+   descEn:"A box or highlight around text immediately marks that phrase as important.",
+   tipId:"Enclosure teks (highlight, box, background color) sangat efektif untuk annotation pada chart atau callout di slide. Gunakan warna background yang kontras namun tidak terlalu gelap agar teks tetap terbaca. Satu enclosure per halaman sudah cukup kuat — jangan berlebihan.",
+   tipEn:"Text enclosure (highlight, box, background color) is very effective for chart annotations or slide callouts. Use contrasting but not too dark background color so text remains readable. One enclosure per page is already strong enough — don't overdo it.",
+   whenId:"Callout box, annotation penting, highlight baris kritis di tabel",
+   whenEn:"Callout boxes, important annotations, highlighting critical rows in tables",
+   avoidId:"Terlalu banyak enclosure dalam satu halaman; background terlalu gelap menutupi teks",
+   avoidEn:"Too many enclosures on one page; background too dark obscuring the text",
+   type:"txt_enclosure",icon:"□",lblId:"",lblEn:""},
+];
+
+const BOARD_TEMPLATES = [
+  {id:"problem-solution",name:{id:"Problem → Solution",en:"Problem → Solution"},desc:{id:"Klasik: masalah, analisis, solusi",en:"Classic: problem, analysis, solution"},icon:"💡",
+   cards:[{type:"hook",c:{id:"Data mengejutkan: [X]% penurunan — angka terburuk dalam [N] tahun terakhir.",en:"Shocking data: [X]% decline — the worst number in [N] years."}},{type:"context",c:{id:"Konteks: siapa yang terdampak, seberapa besar, dan mengapa ini penting sekarang.",en:"Context: who is affected, how big is the impact, and why it matters now."}},{type:"insight",c:{id:"Temuan kunci: akar masalah berdasarkan data adalah...",en:"Key finding: the root cause based on data is..."}},{type:"chart",c:{id:"Line chart tren 12 bulan terakhir untuk mendukung insight utama.",en:"12-month trend line chart to support the key insight."}},{type:"action",c:{id:"3 langkah konkret yang perlu diambil segera.",en:"3 concrete steps to take immediately."}},{type:"conclusion",c:{id:"Jika bertindak sekarang: [hasil]. Jika tidak: [risiko].",en:"If we act now: [outcome]. If not: [risk]."}}]},
+  {id:"whats-changed",name:{id:"Apa yang Berubah?",en:"What Changed?"},desc:{id:"Perubahan signifikan dari waktu ke waktu",en:"Significant change over time"},icon:"📈",
+   cards:[{type:"hook",c:{id:"[X]% naik/turun dalam [periode] — perubahan terbesar sejak [waktu].",en:"[X]% up/down in [period] — the biggest change since [time]."}},{type:"context",c:{id:"Kondisi sebelumnya dan baseline yang dipakai sebagai pembanding.",en:"Previous state and the baseline used for comparison."}},{type:"chart",c:{id:"Slope chart atau line chart menunjukkan perubahan dari titik A ke titik B.",en:"Slope chart or line chart showing change from point A to point B."}},{type:"insight",c:{id:"Faktor pendorong: internal (strategi, produk) vs eksternal (pasar, kompetitor).",en:"Driving factors: internal (strategy, product) vs external (market, competitor)."}},{type:"action",c:{id:"Langkah selanjutnya berdasarkan arah perubahan.",en:"Next steps based on the direction of change."}},{type:"conclusion",c:{id:"Proyeksi ke depan jika tren berlanjut.",en:"Forward projection if the trend continues."}}]},
+  {id:"comparison",name:{id:"Perbandingan Segmen",en:"Segment Comparison"},desc:{id:"Bandingkan performa antar segmen",en:"Compare performance across segments"},icon:"⚖️",
+   cards:[{type:"hook",c:{id:"Tidak semua segmen sama — satu segmen jauh di atas/bawah yang lain.",en:"Not all segments equal — one stands far above/below the rest."}},{type:"context",c:{id:"Definisi segmen dan metrik yang digunakan untuk perbandingan.",en:"Segment definitions and metrics used for comparison."}},{type:"chart",c:{id:"Bar chart atau dot plot membandingkan nilai antar semua segmen.",en:"Bar chart or dot plot comparing values across all segments."}},{type:"insight",c:{id:"Segmen mana yang outstanding/underperforming? Apa yang membedakannya?",en:"Which segment is outstanding/underperforming? What differentiates it?"}},{type:"action",c:{id:"Replikasi strategi segmen terbaik atau perbaiki yang terlemah.",en:"Replicate top segment strategy or fix the weakest."}},{type:"conclusion",c:{id:"Dampak jika gap antar segmen bisa dikurangi [X]%.",en:"Impact if the gap between segments could be reduced by [X]%."}}]},
+  {id:"deep-dive",name:{id:"Deep Dive Analisis",en:"Analysis Deep Dive"},desc:{id:"Eksplorasi mendalam satu topik",en:"In-depth exploration of one topic"},icon:"🔬",
+   cards:[{type:"hook",c:{id:"Pertanyaan besar yang akan dijawab: mengapa [X] terjadi?",en:"The big question to answer: why did [X] happen?"}},{type:"context",c:{id:"Scope: periode, metrik, metodologi, dan data source yang digunakan.",en:"Scope: period, metrics, methodology, and data source used."}},{type:"insight",c:{id:"Temuan 1: metrik utama menunjukkan pola/anomali pada [dimensi].",en:"Finding 1: key metric shows pattern/anomaly on [dimension]."}},{type:"chart",c:{id:"Distribusi atau korelasi yang mendukung temuan utama.",en:"Distribution or correlation supporting the main finding."}},{type:"insight",c:{id:"Temuan 2: drill-down ke [sub-dimensi] mengungkapkan bahwa...",en:"Finding 2: drill-down to [sub-dimension] reveals that..."}},{type:"conclusion",c:{id:"Kesimpulan dan rekomendasi dari keseluruhan analisis.",en:"Conclusions and recommendations from the full analysis."}}]},
+  {id:"pyramid-minto",name:{id:"🔺 Pyramid Principle",en:"🔺 Pyramid Principle"},desc:{id:"SCQA + Governing Thought + 3 Argumen MECE (Minto)",en:"SCQA + Governing Thought + 3 MECE Arguments (Minto)"},icon:"🔺",
+   cards:[
+     {type:"situation",c:{id:"Kondisi stabil yang semua pihak setuju — gambaran situasi saat ini secara faktual.",en:"Stable condition everyone agrees with — factual picture of the current situation."}},
+     {type:"complication",c:{id:"Apa yang berubah / trigger — mengapa situasi saat ini tidak lagi dapat diterima.",en:"What changed / trigger — why the current situation is no longer acceptable."}},
+     {type:"question",c:{id:"Pertanyaan inti yang muncul secara alami: Apa yang harus kita lakukan untuk mengatasinya?",en:"Core question that naturally arises: What should we do to address this?"}},
+     {type:"answer",c:{id:"Governing Thought (jawaban langsung): [Satu kalimat rekomendasi utama — disampaikan di awal].",en:"Governing Thought (direct answer): [One-sentence main recommendation — delivered upfront]."}},
+     {type:"argument",c:{id:"Argumen Kunci 1 (MECE): Alasan pertama yang mendukung Governing Thought secara logis.",en:"Key Argument 1 (MECE): First reason logically supporting the Governing Thought."}},
+     {type:"evidence",c:{id:"Bukti Argumen 1: Data, angka, atau fakta konkret yang membuktikan argumen 1.",en:"Evidence for Arg 1: Data, numbers, or concrete facts proving argument 1."}},
+     {type:"argument",c:{id:"Argumen Kunci 2 (MECE): Alasan kedua — tidak overlap dengan arg 1, melengkapi cakupan.",en:"Key Argument 2 (MECE): Second reason — non-overlapping with arg 1, extends coverage."}},
+     {type:"evidence",c:{id:"Bukti Argumen 2: Data, angka, atau fakta konkret yang membuktikan argumen 2.",en:"Evidence for Arg 2: Data, numbers, or concrete facts proving argument 2."}},
+     {type:"argument",c:{id:"Argumen Kunci 3 (MECE): Alasan ketiga — bersama arg 1&2 membentuk cakupan yang lengkap.",en:"Key Argument 3 (MECE): Third reason — with args 1&2 forms collectively exhaustive coverage."}},
+     {type:"evidence",c:{id:"Bukti Argumen 3: Data, angka, atau fakta konkret yang membuktikan argumen 3.",en:"Evidence for Arg 3: Data, numbers, or concrete facts proving argument 3."}},
+     {type:"action",c:{id:"Rekomendasi: Langkah-langkah konkret berdasarkan Governing Thought di atas.",en:"Recommendations: Concrete steps based on the Governing Thought above."}},
+   ]}
+];
+
+const CARD_CFG = {
+  // ── Classic types ──────────────────────────
+  hook:       {color:"#7C3AED",bg:"#F5F3FF",border:"#DDD6FE",emoji:"🎯"},
+  context:    {color:"#0891B2",bg:"#F0F9FF",border:"#BAE6FD",emoji:"📋"},
+  insight:    {color:"#059669",bg:"#F0FDF4",border:"#A7F3D0",emoji:"💡"},
+  chart:      {color:"#D97706",bg:"#FFFBEB",border:"#FDE68A",emoji:"📊"},
+  action:     {color:"#DC2626",bg:"#FEF2F2",border:"#FECACA",emoji:"⚡"},
+  conclusion: {color:"#0F172A",bg:"#F8FAFC",border:"#CBD5E1",emoji:"✅"},
+  // ── Minto Pyramid Principle types ──────────
+  situation:   {color:"#0369A1",bg:"#F0F9FF",border:"#BAE6FD",emoji:"🌐",pyramid:true,level:0},
+  complication:{color:"#B91C1C",bg:"#FEF2F2",border:"#FCA5A5",emoji:"⚡",pyramid:true,level:0},
+  question:    {color:"#B45309",bg:"#FFFBEB",border:"#FDE68A",emoji:"❓",pyramid:true,level:0},
+  answer:      {color:"#1D4ED8",bg:"#EFF6FF",border:"#93C5FD",emoji:"🎯",pyramid:true,level:1},
+  argument:    {color:"#6D28D9",bg:"#F5F3FF",border:"#C4B5FD",emoji:"🔑",pyramid:true,level:2},
+  evidence:    {color:"#065F46",bg:"#ECFDF5",border:"#A7F3D0",emoji:"📊",pyramid:true,level:3},
+};
+
+const BOARD_EXAMPLE = [
+  {type:"hook",  text:{id:"Penjualan Q3 turun 23% — terburuk dalam 5 tahun terakhir",en:"Q3 sales down 23% — worst in 5 years"}},
+  {type:"context",text:{id:"Tren dimulai sejak kompetitor baru masuk di Maret 2024",en:"Trend started when new competitor entered in March 2024"}},
+  {type:"insight",text:{id:"Kehilangan market share terbesar di segmen usia 25–35 tahun",en:"Biggest market share loss in the 25–35 age segment"}},
+  {type:"chart",  text:{id:"Line chart: pertumbuhan kita vs kompetitor, Jan–Sep 2024",en:"Line chart: our growth vs competitor, Jan–Sep 2024"}},
+  {type:"action", text:{id:"Luncurkan kampanye khusus segmen 25–35 di Q4",en:"Launch targeted campaign for 25–35 segment in Q4"}},
+  {type:"conclusion",text:{id:"Estimasi recovery 15% jika kampanye berjalan sesuai rencana",en:"Estimated 15% recovery if campaign runs as planned"}},
+];
+
+const FAQ = [
+  {q:{id:"Kapan pakai bar chart vs line chart?",en:"When to use bar chart vs line chart?"},a:{id:"Bar chart untuk perbandingan kategori tanpa urutan waktu. Line chart untuk data time-series di mana tren naik/turun penting untuk ditampilkan.",en:"Bar chart for comparing categories without time order. Line chart for time-series data where trends matter."}},
+  {q:{id:"Apakah pie chart boleh digunakan?",en:"Is it okay to use pie charts?"},a:{id:"Boleh, tapi maksimal 4 slice, proporsinya kontras jelas, dan audiens tidak perlu membandingkan nilai presisi. Jika ragu, pakai bar chart.",en:"Yes, but max 4 slices, clearly contrasting proportions, and no precise comparison needed. When in doubt, use a bar chart."}},
+  {q:{id:"Berapa banyak warna yang boleh dipakai?",en:"How many colors can I use?"},a:{id:"Maksimal 6 warna kategoris. Mulai dengan abu-abu untuk semua data, lalu gunakan satu warna highlight untuk poin utama.",en:"Maximum 6 categorical colors. Start with gray for all data, then use one highlight color for the main point."}},
+  {q:{id:"Apa itu preattentive attributes?",en:"What are preattentive attributes?"},a:{id:"Elemen visual yang diproses otak dalam <250ms. Contoh: warna, ukuran, posisi, bentuk. Gunakan untuk mengarahkan mata ke informasi terpenting.",en:"Visual elements processed by the brain in <250ms. Examples: color, size, position, shape. Use to direct eyes to the most important information."}},
+  {q:{id:"Bagaimana mengurangi clutter pada grafik?",en:"How to reduce clutter in a chart?"},a:{id:"Hapus gridlines yang tidak perlu, hilangkan border/frame, kurangi decimal, label langsung daripada legend, dan gunakan abu-abu untuk elemen pendukung.",en:"Remove unnecessary gridlines, eliminate borders/frames, reduce decimals, label directly instead of legend, and use gray for supporting elements."}},
+];
+
+// ─── API + UI HELPERS ─────────────────────────────────────────────────────────
+async function callClaude({ apiKey, messages, system, imageBase64, imageMime, maxTokens=1000 }) {
+  const last = messages[messages.length - 1];
+  const userContent = imageBase64
+    ? [{ type:"image", source:{ type:"base64", media_type:imageMime||"image/jpeg", data:imageBase64 } }, { type:"text", text:last?.content||"" }]
+    : last?.content;
+  // Use user's API key in headers for direct call (required for vision/image features)
+  const headers = { "Content-Type":"application/json" };
+  if (apiKey) {
+    headers["x-api-key"] = apiKey;
+    headers["anthropic-version"] = "2023-06-01";
+    headers["anthropic-dangerous-direct-browser-access"] = "true";
+  }
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method:"POST", headers,
+    body: JSON.stringify({ model:"claude-sonnet-4-6", max_tokens:maxTokens, system:system||"",
+      messages:[...messages.slice(0,-1), {role:"user", content:userContent}] })
+  });
+  if (!res.ok) { const e=await res.json().catch(()=>({})); throw new Error(e?.error?.message||`HTTP ${res.status}`); }
+  const data = await res.json();
+  return data.content?.find(b=>b.type==="text")?.text || "";
+}
+
+function safeJSON(txt) {
+  const clean = txt.replace(/```json|```/g,"").trim();
+  try { return JSON.parse(clean); } catch(firstErr) {
+    // Strategy 1: slice to last complete }
+    const lastBrace = clean.lastIndexOf("}");
+    if (lastBrace > 0) { try { return JSON.parse(clean.slice(0,lastBrace+1)); } catch(_){} }
+    // Strategy 2: close open strings, arrays, objects
+    try {
+      let s=clean, inStr=false, esc=false, opens=0, braces=0;
+      for(let i=0;i<s.length;i++){
+        const c=s[i];
+        if(esc){esc=false;continue;}
+        if(c==="\\"&&inStr){esc=true;continue;}
+        if(c==='"'){inStr=!inStr;continue;}
+        if(!inStr){if(c==="[")opens++;else if(c==="]")opens--;else if(c==="{")braces++;else if(c==="}")braces--;}
+      }
+      let fixed=inStr?(s+'"'):s;
+      fixed+="]".repeat(Math.max(0,opens));
+      fixed+="}".repeat(Math.max(0,braces));
+      return JSON.parse(fixed);
+    } catch(_){}
+    throw firstErr;
+  }
+}
+
+function Chip({ children, color="#2563EB" }) {
+  return <span style={{background:color+"15",color,border:`1px solid ${color}40`,borderRadius:6,padding:"2px 8px",fontSize:11,fontWeight:600,whiteSpace:"nowrap"}}>{children}</span>;
+}
+function SCard({ children, style={} }) {
+  return <div style={{background:"#fff",borderRadius:12,border:"1px solid #E2E8F0",padding:16,...style}}>{children}</div>;
+}
+function Dots() {
+  return <span style={{display:"inline-flex",gap:4,alignItems:"center"}}>
+    {[0,1,2].map(i=><span key={i} style={{width:6,height:6,borderRadius:"50%",background:"#2563EB",animation:`pulse 1.2s ${i*0.2}s infinite`,display:"inline-block"}}/>)}
+  </span>;
+}
+function NoKeyBanner({ msg }) {
+  return <div style={{background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:10,padding:"12px 14px",textAlign:"center"}}>
+    <div style={{fontSize:22,marginBottom:6}}>🔑</div>
+    <div style={{fontSize:13,color:"#92400E"}}>{msg}</div>
+  </div>;
+}
+
+// ─── PREATTENTIVE DEMO (language-aware) ──────────────────────────────────────
+function PreattentiveDemo({ item, lang }) {
+  const lbl = lang==="id" ? item.lblId : item.lblEn;
+  const w=192, h=44;
+  const mkRect = (i, red) => <rect key={i} x={i*16} y={0} width={14} height={14} rx={2} fill={red?"#EF4444":"#CBD5E1"}/>;
+  const mkRect2 = (i, red) => <rect key={i+12} x={i*16} y={18} width={14} height={14} rx={2} fill={red?"#EF4444":"#CBD5E1"}/>;
+
+  let demo = null;
+  const ns = [0,1,2,3,4,5,6,7,8,9,10,11];
+
+  if (item.type==="color") demo = (
+    <svg width={w} height={h}>
+      {ns.map(i=>mkRect(i, i===4))}
+      {ns.map(i=>mkRect2(i, i===8))}
+      <text x="0" y={h} fontSize="9" fill="#94A3B8">{lbl}</text>
+    </svg>
+  );
+  else if (item.type==="intensity") demo = (
+    <svg width={w} height={h}>
+      {ns.map(i=><rect key={i} x={i*16} y={4} width={14} height={22} rx={2} fill={`rgba(37,99,235,${0.08+i*0.083})`}/>)}
+      <text x="0" y={h} fontSize="9" fill="#94A3B8">{lbl}</text>
+    </svg>
+  );
+  else if (item.type==="position") demo = (
+    <svg width={w} height={h+16}>
+      {[28,18,42,15,36,22].map((hh,i)=><rect key={i} x={8+i*30} y={52-hh} width={20} height={hh} rx={2} fill={i===3?"#EF4444":"#CBD5E1"}/>)}
+      <line x1="4" y1="52" x2="186" y2="52" stroke="#E2E8F0" strokeWidth="1"/>
+      <text x="0" y={h+16} fontSize="9" fill="#94A3B8">{lbl}</text>
+    </svg>
+  );
+  else if (item.type==="size") demo = (
+    <svg width={w} height={h}>
+      {ns.map(i=><circle key={i} cx={10+i*16} cy={20} r={i===6?10:5} fill={i===6?"#2563EB":"#CBD5E1"}/>)}
+      <text x="0" y={h} fontSize="9" fill="#94A3B8">{lbl}</text>
+    </svg>
+  );
+  else if (item.type==="shape") demo = (
+    <svg width={w} height={h}>
+      {ns.map(i=>i===5
+        ? <polygon key={i} points={`${10+i*16},6 ${18+i*16},26 ${2+i*16},26`} fill="#EF4444"/>
+        : <circle key={i} cx={10+i*16} cy={16} r={6} fill="#2563EB"/>
+      )}
+      <text x="0" y={h} fontSize="9" fill="#94A3B8">{lbl}</text>
+    </svg>
+  );
+  else if (item.type==="orientation") demo = (
+    <svg width={w} height={h}>
+      {ns.map(i=><rect key={i} x={7+i*16} y={5} width={5} height={20} rx={2} fill={i===8?"#EF4444":"#CBD5E1"} transform={i===8?`rotate(45 ${9+i*16} 15)`:""}/>)}
+      <text x="0" y={h} fontSize="9" fill="#94A3B8">{lbl}</text>
+    </svg>
+  );
+  else if (item.type==="enclosure") demo = (
+    <svg width={w} height={h}>
+      {ns.map(i=><rect key={i} x={6+i*16} y={4} width={12} height={12} rx={2} fill="#E2E8F0"/>)}
+      <rect x="34" y="1" width="52" height="18" rx="4" fill="none" stroke="#EF4444" strokeWidth="2"/>
+      <text x="0" y={h} fontSize="9" fill="#94A3B8">{lbl}</text>
+    </svg>
+  );
+  else if (item.type==="connection") demo = (
+    <svg width={w} height={h}>
+      {[18,50,82,114,146].map((x,i)=><g key={i}>
+        <circle cx={x} cy={10} r={5} fill="#CBD5E1"/>
+        <circle cx={x} cy={32} r={5} fill="#CBD5E1"/>
+        {i===2&&<line x1={x} y1={10} x2={x} y2={32} stroke="#EF4444" strokeWidth={2.5}/>}
+      </g>)}
+      <text x="0" y={h} fontSize="9" fill="#94A3B8">{lbl}</text>
+    </svg>
+  );
+
+  // ── Text-based preattentive demos ───────────────────────────────────────
+  if (item.type && item.type.startsWith("txt_")) {
+    const isId = lang === "id";
+    const g  = {color:"#94A3B8"}; // gray = normal text
+    const hi = {color:"#0F172A", fontWeight:700}; // main text style
+    const BASE_ID = ["Tim berhasil capai milestone Q2.", "Distribusi berjalan normal.", "Semua divisi on track."];
+    const BASE_EN = ["Team achieved the Q2 milestone.", "Distribution is running normally.", "All divisions on track."];
+    const base = isId ? BASE_ID : BASE_EN;
+    const KEY_ID = "Penjualan turun 15% MoM";
+    const KEY_EN = "Sales declined 15% MoM";
+    const key = isId ? KEY_ID : KEY_EN;
+    const lbl2 = isId ? "← teks abu-abu + highlight = kontras langsung terlihat"
+                      : "← gray text + highlight = contrast immediately visible";
+
+    const wrap = (inner) => (
+      <div style={{background:"#F8FAFC",borderRadius:8,padding:"10px 12px",marginTop:8}}>
+        <div style={{fontSize:12,color:"#64748B",lineHeight:1.8}}>{inner}</div>
+        <div style={{fontSize:9,color:"#94A3B8",marginTop:6,fontStyle:"italic"}}>{lbl2}</div>
+      </div>
+    );
+
+    if (item.type === "txt_bold") return wrap(<>
+      <span style={g}>{base[0]} </span>
+      <span style={{color:"#0F172A",fontWeight:800}}>{key}.</span>
+      <span style={g}> {base[1]} {base[2]}</span>
+    </>);
+
+    if (item.type === "txt_italic") return wrap(<>
+      <span style={g}>{base[0]} </span>
+      <span style={{color:"#0F172A",fontStyle:"italic",fontWeight:600}}>{key}.</span>
+      <span style={g}> {base[1]} {base[2]}</span>
+    </>);
+
+    if (item.type === "txt_size") return wrap(<>
+      <span style={{...g, fontSize:11}}>{base[0]} </span>
+      <span style={{fontSize:20,fontWeight:800,color:"#0F172A",lineHeight:1.2}}>{key}.</span>
+      <span style={{...g, fontSize:11}}> {base[1]} {base[2]}</span>
+    </>);
+
+    if (item.type === "txt_color") return wrap(<>
+      <span style={g}>{base[0]} </span>
+      <span style={{color:"#DC2626",fontWeight:700}}>{key}.</span>
+      <span style={g}> {base[1]} {base[2]}</span>
+    </>);
+
+    if (item.type === "txt_underline") return wrap(<>
+      <span style={g}>{base[0]} </span>
+      <span style={{color:"#0F172A",textDecoration:"underline",fontWeight:600}}>{key}.</span>
+      <span style={g}> {base[1]} {base[2]}</span>
+    </>);
+
+    if (item.type === "txt_spatial") return wrap(<>
+      <div style={{...g, marginBottom:8}}>{base[0]} {base[2]}</div>
+      <div style={{color:"#0F172A",fontWeight:700,borderLeft:"3px solid #2563EB",paddingLeft:8}}>{key}.</div>
+      <div style={{...g, marginTop:8}}>{base[1]}</div>
+    </>);
+
+    if (item.type === "txt_enclosure") return wrap(<>
+      <span style={g}>{base[0]} </span>
+      <span style={{background:"#FEF9C3",border:"1px solid #FDE047",borderRadius:4,padding:"1px 5px",color:"#713F12",fontWeight:700}}>{key}</span>
+      <span style={g}>. {base[1]} {base[2]}</span>
+    </>);
+
+    return null;
+  }
+
+  return demo ? <div style={{background:"#F8FAFC",borderRadius:8,padding:"8px 10px",marginTop:8,overflowX:"auto"}}>{demo}</div> : null;
+}
+
+// ─── SVG CHART RENDERERS (for Illustrator + Recommend preview) ───────────────
+const COLOR_SCHEMES = {
+  blue:  ["#2563EB","#3B82F6","#60A5FA","#93C5FD","#BFDBFE","#1D4ED8"],
+  green: ["#059669","#10B981","#34D399","#6EE7B7","#A7F3D0","#065F46"],
+  orange:["#D97706","#F59E0B","#FCD34D","#FDE68A","#FEF3C7","#92400E"],
+  purple:["#7C3AED","#8B5CF6","#A78BFA","#C4B5FD","#DDD6FE","#5B21B6"],
+  mixed: ["#2563EB","#10B981","#F59E0B","#EF4444","#8B5CF6","#EC4899"],
+};
+
+function fmt(v) { return v>=1e6?(v/1e6).toFixed(1)+"M":v>=1e3?(v/1e3).toFixed(1)+"K":String(Math.round(v)); }
+
+function barSVG(title, labels, values, colors, W=400, H=260) {
+  const p={t:44,r:16,b:52,l:52}, w=W-p.l-p.r, h=H-p.t-p.b;
+  const mx=Math.max(...values)*1.12||1, bw=Math.min(w/labels.length*0.62,52), gap=w/labels.length;
+  let g="",bars="";
+  for(let i=0;i<=5;i++){const v=(mx/5)*i,y=p.t+h-(v/mx)*h;g+=`<line x1="${p.l}" y1="${y.toFixed(0)}" x2="${p.l+w}" y2="${y.toFixed(0)}" stroke="#F1F5F9" stroke-width="1"/><text x="${p.l-5}" y="${(y+4).toFixed(0)}" text-anchor="end" font-size="9" font-family="Plus Jakarta Sans,sans-serif" fill="#94A3B8">${fmt(v)}</text>`;}
+  labels.forEach((lbl,i)=>{
+    const bh=(values[i]/mx)*h, bx=p.l+gap*i+gap/2-bw/2, by=p.t+h-bh;
+    const c=colors[i%colors.length];
+    bars+=`<rect x="${bx.toFixed(0)}" y="${by.toFixed(0)}" width="${bw.toFixed(0)}" height="${bh.toFixed(0)}" rx="4" fill="${c}"/>`;
+    bars+=`<text x="${(bx+bw/2).toFixed(0)}" y="${(by-4).toFixed(0)}" text-anchor="middle" font-size="9" font-weight="700" font-family="Plus Jakarta Sans,sans-serif" fill="${c}">${fmt(values[i])}</text>`;
+    bars+=`<text x="${(bx+bw/2).toFixed(0)}" y="${(p.t+h+14).toFixed(0)}" text-anchor="middle" font-size="9" font-family="Plus Jakarta Sans,sans-serif" fill="#64748B">${lbl.length>8?lbl.slice(0,8)+"…":lbl}</text>`;
+  });
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><rect width="${W}" height="${H}" fill="#fff" rx="10"/><text x="${W/2}" y="26" text-anchor="middle" font-size="13" font-weight="700" font-family="Plus Jakarta Sans,sans-serif" fill="#0F172A">${title}</text>${g}<line x1="${p.l}" y1="${p.t}" x2="${p.l}" y2="${p.t+h}" stroke="#E2E8F0" stroke-width="1.5"/><line x1="${p.l}" y1="${p.t+h}" x2="${p.l+w}" y2="${p.t+h}" stroke="#E2E8F0" stroke-width="1.5"/>${bars}</svg>`;
+}
+
+function lineSVG(title, labels, values, colors, W=400, H=260) {
+  const p={t:44,r:16,b:46,l:52}, w=W-p.l-p.r, h=H-p.t-p.b;
+  const mx=Math.max(...values)*1.12||1, mn=Math.min(0,...values), rng=mx-mn||1;
+  const xp=i=>p.l+(w/(labels.length-1||1))*i, yp=v=>p.t+h-((v-mn)/rng)*h;
+  const col=colors[0];
+  let g="",pts=values.map((v,i)=>`${xp(i).toFixed(0)},${yp(v).toFixed(0)}`).join(" "),xlbls="";
+  for(let i=0;i<=5;i++){const v=mn+(rng/5)*i,y=yp(v);g+=`<line x1="${p.l}" y1="${y.toFixed(0)}" x2="${p.l+w}" y2="${y.toFixed(0)}" stroke="#F1F5F9" stroke-width="1"/><text x="${p.l-5}" y="${(y+4).toFixed(0)}" text-anchor="end" font-size="9" font-family="Plus Jakarta Sans,sans-serif" fill="#94A3B8">${fmt(v)}</text>`;}
+  const step=Math.max(1,Math.floor(labels.length/6));
+  labels.forEach((lbl,i)=>{if(i%step===0||i===labels.length-1)xlbls+=`<text x="${xp(i).toFixed(0)}" y="${(p.t+h+14).toFixed(0)}" text-anchor="middle" font-size="9" font-family="Plus Jakarta Sans,sans-serif" fill="#64748B">${lbl}</text>`;});
+  const aPts=pts+` ${xp(values.length-1).toFixed(0)},${(p.t+h).toFixed(0)} ${p.l},${(p.t+h).toFixed(0)}`;
+  const dots=values.map((v,i)=>`<circle cx="${xp(i).toFixed(0)}" cy="${yp(v).toFixed(0)}" r="4" fill="${col}" stroke="#fff" stroke-width="2"/>`).join("");
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><rect width="${W}" height="${H}" fill="#fff" rx="10"/><text x="${W/2}" y="26" text-anchor="middle" font-size="13" font-weight="700" font-family="Plus Jakarta Sans,sans-serif" fill="#0F172A">${title}</text>${g}<line x1="${p.l}" y1="${p.t}" x2="${p.l}" y2="${p.t+h}" stroke="#E2E8F0" stroke-width="1.5"/><line x1="${p.l}" y1="${p.t+h}" x2="${p.l+w}" y2="${p.t+h}" stroke="#E2E8F0" stroke-width="1.5"/><polygon points="${aPts}" fill="${col}" fill-opacity="0.08"/><polyline points="${pts}" fill="none" stroke="${col}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>${dots}${xlbls}</svg>`;
+}
+
+function pieSVG(title, labels, values, colors, W=400, H=260) {
+  const cx=W/2, cy=(H-24)/2+36, r=Math.min(cx*0.65,(cy-36)*0.8);
+  const tot=values.reduce((a,b)=>a+b,0)||1;
+  let sa=-Math.PI/2,sl="",lb="",leg="";
+  values.forEach((v,i)=>{
+    const ang=(v/tot)*2*Math.PI, ea=sa+ang, ma=sa+ang/2;
+    const x1=cx+r*Math.cos(sa),y1=cy+r*Math.sin(sa),x2=cx+r*Math.cos(ea),y2=cy+r*Math.sin(ea);
+    const col=colors[i%colors.length];
+    sl+=`<path d="M${cx.toFixed(0)},${cy.toFixed(0)} L${x1.toFixed(0)},${y1.toFixed(0)} A${r.toFixed(0)},${r.toFixed(0)} 0 ${ang>Math.PI?1:0},1 ${x2.toFixed(0)},${y2.toFixed(0)} Z" fill="${col}" stroke="#fff" stroke-width="2"/>`;
+    if(ang>0.3){const lx=cx+(r*0.62)*Math.cos(ma),ly=cy+(r*0.62)*Math.sin(ma);lb+=`<text x="${lx.toFixed(0)}" y="${ly.toFixed(0)}" text-anchor="middle" dominant-baseline="middle" font-size="11" font-weight="700" font-family="Plus Jakarta Sans,sans-serif" fill="#fff">${((v/tot)*100).toFixed(0)}%</text>`;}
+    leg+=`<rect x="8" y="${34+i*18}" width="10" height="10" rx="2" fill="${col}"/><text x="22" y="${34+i*18+9}" font-size="9" font-family="Plus Jakarta Sans,sans-serif" fill="#374151">${(labels[i]||"").slice(0,14)}: ${fmt(v)}</text>`;
+    sa=ea;
+  });
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><rect width="${W}" height="${H}" fill="#fff" rx="10"/><text x="${W/2}" y="24" text-anchor="middle" font-size="13" font-weight="700" font-family="Plus Jakarta Sans,sans-serif" fill="#0F172A">${title}</text>${sl}${lb}${leg}</svg>`;
+}
+
+function buildSVG(type, title, labels, values, colors, W=400, H=260) {
+  if (type==="line"||type==="area") return lineSVG(title,labels,values,colors,W,H);
+  if (type==="pie") return pieSVG(title,labels,values,colors,W,H);
+  return barSVG(title,labels,values,colors,W,H);
+}
+
+function groupedBarSVG(title, labels, series, W=420, H=280) {
+  const p={t:44,r:16,b:52,l:52};
+  const w=W-p.l-p.r, h=H-p.t-p.b;
+  const n=series.length;
+  const allVals=series.flatMap(s=>s.values||[]);
+  const mx=Math.max(...allVals)*1.12||1;
+  const groupW=w/labels.length;
+  const bw=Math.min(groupW*0.88/n, 28);
+  const gap=(groupW-bw*n)/2;
+  const defCol=["#2563EB","#F59E0B","#10B981","#EF4444","#8B5CF6","#EC4899"];
+  const fmtV=v=>v>=1e6?(v/1e6).toFixed(1)+"M":v>=1e3?(v/1e3).toFixed(0)+"K":String(Math.round(v));
+  let grid="",bars="",xlbls="",legend="";
+  for(let i=0;i<=5;i++){const v=(mx/5)*i,y=p.t+h-(v/mx)*h;grid+=`<line x1="${p.l}" y1="${y.toFixed(0)}" x2="${p.l+w}" y2="${y.toFixed(0)}" stroke="#F1F5F9" stroke-width="1"/><text x="${p.l-5}" y="${(y+4).toFixed(0)}" text-anchor="end" font-size="9" font-family="Plus Jakarta Sans,sans-serif" fill="#94A3B8">${fmtV(v)}</text>`;}
+  labels.forEach((lbl,gi)=>{
+    const gx=p.l+gi*groupW+gap;
+    xlbls+=`<text x="${(gx+bw*n/2).toFixed(0)}" y="${(p.t+h+14).toFixed(0)}" text-anchor="middle" font-size="9" font-family="Plus Jakarta Sans,sans-serif" fill="#64748B">${lbl}</text>`;
+    series.forEach((s,si)=>{
+      const v=s.values?.[gi]||0, bh=(v/mx)*h, bx=gx+si*bw, by=p.t+h-bh;
+      const col=s.color||defCol[si%defCol.length];
+      bars+=`<rect x="${bx.toFixed(0)}" y="${by.toFixed(0)}" width="${(bw-1).toFixed(0)}" height="${Math.max(bh,0).toFixed(0)}" rx="2" fill="${col}"/>`;
+      if(bh>12)bars+=`<text x="${(bx+bw/2-0.5).toFixed(0)}" y="${(by-3).toFixed(0)}" text-anchor="middle" font-size="8" font-weight="700" font-family="Plus Jakarta Sans,sans-serif" fill="${col}">${v}</text>`;
+    });
+  });
+  const legW=Math.min(90,W/n);
+  series.forEach((s,si)=>{const col=s.color||defCol[si%defCol.length],lx=p.l+si*legW;legend+=`<rect x="${lx}" y="${H-14}" width="8" height="8" rx="1" fill="${col}"/><text x="${lx+11}" y="${H-6}" font-size="8" font-family="Plus Jakarta Sans,sans-serif" fill="#374151">${(s.name||"").slice(0,10)}</text>`;});
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><rect width="${W}" height="${H}" fill="#fff" rx="10"/><text x="${W/2}" y="26" text-anchor="middle" font-size="13" font-weight="700" font-family="Plus Jakarta Sans,sans-serif" fill="#0F172A">${title}</text>${grid}<line x1="${p.l}" y1="${p.t}" x2="${p.l}" y2="${p.t+h}" stroke="#E2E8F0" stroke-width="1.5"/><line x1="${p.l}" y1="${p.t+h}" x2="${p.l+w}" y2="${p.t+h}" stroke="#E2E8F0" stroke-width="1.5"/>${bars}${xlbls}${legend}</svg>`;
+}
+
+function renderRedesignSVG(rc) {
+  if (!rc) return null;
+  const cols = rc.colors || ["#2563EB","#F59E0B","#10B981","#EF4444","#8B5CF6","#EC4899"];
+  if (rc.type === "grouped_bar" && rc.series) {
+    const seriesWithColor = rc.series.map((s,i)=>({...s, color: rc.colors?.[i]||cols[i%cols.length]}));
+    return groupedBarSVG(rc.title||"Improved Chart", rc.labels||[], seriesWithColor, 420, 280);
+  }
+  return buildSVG(rc.type||"bar", rc.title||"Improved Chart", rc.labels||[], rc.values||[], cols, 420, 260);
+}
+
+function parseCSVForChart(csv) {
+  const lines=csv.trim().split("\n").filter(l=>l.trim());
+  if(lines.length<2) return null;
+  const headers=lines[0].split(",").map(h=>h.trim().replace(/['"]/g,""));
+  const rows=lines.slice(1).map(l=>l.split(",").map(c=>c.trim().replace(/['"]/g,"")));
+  let labelCol=0, valueCol=-1;
+  for(let c=1;c<headers.length;c++){if(rows.some(r=>!isNaN(parseFloat(r[c])))){valueCol=c;break;}}
+  if(valueCol===-1){for(let c=0;c<headers.length;c++){if(rows.some(r=>!isNaN(parseFloat(r[c])))){valueCol=c;labelCol=c===0?1:0;break;}}}
+  if(valueCol===-1) return null;
+  const labels=rows.map(r=>r[labelCol]||"?").slice(0,12);
+  const values=rows.map(r=>parseFloat(r[valueCol])).filter(v=>!isNaN(v)).slice(0,12);
+  if(!values.length) return null;
+  return {labels, values, title: headers[valueCol]||"Chart"};
+}
+
+// ─── GUIDE MODULE ─────────────────────────────────────────────────────────────
+function GuideModule({ lang }) {
+  const t = T[lang].guide;
+  const [tab, setTab] = useState(0);
+  const [expanded, setExpanded] = useState(null);
+  return (
+    <div>
+      <h2 style={{fontSize:20,fontWeight:700,color:"#0F172A",margin:"0 0 4px"}}>{t.title}</h2>
+      <p style={{color:"#64748B",fontSize:13,marginBottom:14}}>{t.subtitle}</p>
+      <div style={{display:"flex",gap:4,marginBottom:14,background:"#F1F5F9",borderRadius:10,padding:4}}>
+        {t.tabs.map((lbl,i)=>(
+          <button key={i} onClick={()=>setTab(i)} style={{flex:1,padding:"8px 0",borderRadius:8,border:"none",cursor:"pointer",fontSize:12,fontWeight:600,background:tab===i?"#fff":"transparent",color:tab===i?"#0F172A":"#64748B",boxShadow:tab===i?"0 1px 4px rgba(0,0,0,0.08)":"none",transition:"all 0.15s",fontFamily:"Plus Jakarta Sans,sans-serif"}}>{lbl}</button>
+        ))}
+      </div>
+
+      {tab===0 && (
+        <div style={{display:"flex",flexDirection:"column",gap:12}}>
+          {CHART_GUIDE.map((group,gi)=>(
+            <SCard key={gi}>
+              <div style={{fontSize:11,fontWeight:700,color:"#64748B",textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>{lang==="id"?group.category:group.categoryEn}</div>
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                {group.charts.map((chart,ci)=>{
+                  const key=`${gi}-${ci}`, open=expanded===key;
+                  return (
+                    <div key={ci} style={{border:`1px solid ${open?chart.color:"#E2E8F0"}`,borderRadius:10,overflow:"hidden",transition:"border-color 0.15s"}}>
+                      <div onClick={()=>setExpanded(open?null:key)} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",cursor:"pointer"}}>
+                        <div style={{width:34,height:34,borderRadius:8,background:chart.color+"15",display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0}}>{chart.icon}</div>
+                        <div style={{flex:1}}>
+                          <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                            <span style={{fontWeight:700,fontSize:13,color:"#0F172A"}}>{chart.name}</span>
+                            {chart.warning&&<span style={{background:"#FEF2F2",color:"#EF4444",border:"1px solid #FECACA",borderRadius:6,padding:"1px 7px",fontSize:10,fontWeight:700}}>⚠</span>}
+                          </div>
+                          <div style={{fontSize:12,color:"#64748B",marginTop:2}}>{lang==="id"?chart.when:chart.whenEn}</div>
+                        </div>
+                        <span style={{color:"#94A3B8",fontSize:12}}>{open?"▲":"▼"}</span>
+                      </div>
+                      {open && (
+                        <div style={{padding:"0 12px 12px",borderTop:"1px solid #F1F5F9"}}>
+                          <div style={{background:"#F8FAFC",borderRadius:8,padding:"10px",marginBottom:10,overflowX:"auto"}}>
+                            <div style={{fontSize:10,fontWeight:700,color:"#94A3B8",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>{lang==="id"?"Contoh Visual":"Visual Example"}</div>
+                            <div dangerouslySetInnerHTML={{__html:chart.svg}}/>
+                          </div>
+                          <div style={{marginBottom:8}}>
+                            <span style={{fontSize:11,fontWeight:700,color:"#10B981"}}>✓ {lang==="id"?"Keunggulan":"Strengths"}</span>
+                            <ul style={{margin:"4px 0 0 16px",padding:0,fontSize:12,color:"#374151"}}>
+                              {(lang==="id"?chart.pros:chart.prosEn).map((p,pi)=><li key={pi} style={{marginBottom:2}}>{p}</li>)}
+                            </ul>
+                          </div>
+                          <div style={{background:"#FEF2F2",borderRadius:6,padding:"6px 10px",fontSize:12,color:"#991B1B"}}>✕ {lang==="id"?chart.avoid:chart.avoidEn}</div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </SCard>
+          ))}
+        </div>
+      )}
+
+      {tab===1 && (
+        <div style={{display:"flex",flexDirection:"column",gap:12}}>
+          {COLOR_GUIDE.map((item,i)=>(
+            <SCard key={i}>
+              <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
+                <span style={{fontSize:22,flexShrink:0}}>{item.icon}</span>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,fontSize:13,color:"#0F172A",marginBottom:4}}>{lang==="id"?item.title:item.titleEn}</div>
+                  <div style={{fontSize:12,color:"#64748B",marginBottom:10}}>{lang==="id"?item.desc:item.descEn}</div>
+                  {item.palette&&<div style={{display:"flex",gap:4}}>{item.palette.map((c,ci)=><div key={ci} style={{width:28,height:28,borderRadius:6,background:c,boxShadow:"0 1px 3px rgba(0,0,0,0.1)"}}/>)}</div>}
+                  {item.palettes&&<div style={{display:"flex",flexDirection:"column",gap:8}}>
+                    {Object.entries(item.palettes).map(([lbl,pal])=>(
+                      <div key={lbl}>
+                        <div style={{fontSize:10,fontWeight:600,color:"#94A3B8",textTransform:"uppercase",letterSpacing:1,marginBottom:4}}>{lbl}</div>
+                        <div style={{display:"flex",gap:2}}>{pal.map((c,ci)=><div key={ci} style={{flex:1,height:24,background:c,borderRadius:ci===0?"6px 0 0 6px":ci===pal.length-1?"0 6px 6px 0":0}}/>)}</div>
+                      </div>
+                    ))}
+                  </div>}
+                </div>
+              </div>
+            </SCard>
+          ))}
+        </div>
+      )}
+
+      {tab===2 && (
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {/* Intro card */}
+          <SCard style={{background:"#EFF6FF",border:"1px solid #BFDBFE"}}>
+            <div style={{fontSize:12,color:"#1D4ED8",fontWeight:700,marginBottom:4}}>💡 {lang==="id"?"Apa itu Preattentive Attributes?":"What are Preattentive Attributes?"}</div>
+            <div style={{fontSize:12,color:"#1E40AF",lineHeight:1.6}}>{lang==="id"?"Elemen visual yang diproses otak secara otomatis dalam kurang dari 250ms — sebelum perhatian sadar aktif. Berlaku untuk chart MAUPUN teks. Gunakan ini untuk langsung mengarahkan mata ke informasi terpenting.":"Visual elements processed by the brain in under 250ms — before conscious attention. Applies to both charts AND text. Use these to immediately direct eyes to the most important information."}</div>
+          </SCard>
+
+          {/* Section: Chart attributes */}
+          <div style={{display:"flex",alignItems:"center",gap:8,padding:"4px 0"}}>
+            <div style={{height:1,flex:1,background:"#E2E8F0"}}/>
+            <span style={{fontSize:11,fontWeight:700,color:"#2563EB",textTransform:"uppercase",letterSpacing:1,flexShrink:0}}>
+              📊 {lang==="id"?"Untuk Grafik & Chart":"For Charts & Graphs"}
+            </span>
+            <div style={{height:1,flex:1,background:"#E2E8F0"}}/>
+          </div>
+
+          {PREATTENTIVE.filter(item=>!item.type.startsWith("txt_")).map((item,i)=>(
+            <SCard key={i}>
+              <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
+                <div style={{width:32,height:32,borderRadius:8,background:"#F1F5F9",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{item.icon}</div>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,fontSize:13,color:"#0F172A",marginBottom:2}}>{lang==="id"?item.attr:item.attrEn}</div>
+                  <div style={{fontSize:12,color:"#64748B",marginBottom:6,lineHeight:1.5}}>{lang==="id"?item.desc:item.descEn}</div>
+                  <PreattentiveDemo item={item} lang={lang}/>
+                  {item.tipId && (
+                    <div style={{marginTop:8,background:"#F0FDF4",border:"1px solid #BBF7D0",borderRadius:7,padding:"7px 10px"}}>
+                      <div style={{fontSize:10,fontWeight:700,color:"#15803D",marginBottom:3}}>💡 {lang==="id"?"Cara pakai":"How to use"}</div>
+                      <div style={{fontSize:11,color:"#166534",lineHeight:1.6}}>{lang==="id"?item.tipId:item.tipEn}</div>
+                    </div>
+                  )}
+                  {item.whenId && (
+                    <div style={{display:"flex",gap:6,marginTop:6,flexWrap:"wrap"}}>
+                      <div style={{flex:1,minWidth:120,background:"#EFF6FF",borderRadius:6,padding:"5px 8px"}}>
+                        <div style={{fontSize:9,fontWeight:700,color:"#2563EB",textTransform:"uppercase",marginBottom:2}}>✓ {lang==="id"?"Kapan":"When"}</div>
+                        <div style={{fontSize:10,color:"#1E40AF",lineHeight:1.4}}>{lang==="id"?item.whenId:item.whenEn}</div>
+                      </div>
+                      <div style={{flex:1,minWidth:120,background:"#FEF2F2",borderRadius:6,padding:"5px 8px"}}>
+                        <div style={{fontSize:9,fontWeight:700,color:"#DC2626",textTransform:"uppercase",marginBottom:2}}>✕ {lang==="id"?"Hindari":"Avoid"}</div>
+                        <div style={{fontSize:10,color:"#991B1B",lineHeight:1.4}}>{lang==="id"?item.avoidId:item.avoidEn}</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </SCard>
+          ))}
+
+          {/* Section: Text attributes */}
+          <div style={{display:"flex",alignItems:"center",gap:8,padding:"4px 0",marginTop:4}}>
+            <div style={{height:1,flex:1,background:"#E2E8F0"}}/>
+            <span style={{fontSize:11,fontWeight:700,color:"#7C3AED",textTransform:"uppercase",letterSpacing:1,flexShrink:0}}>
+              ✏️ {lang==="id"?"Untuk Teks & Narasi":"For Text & Narrative"}
+            </span>
+            <div style={{height:1,flex:1,background:"#E2E8F0"}}/>
+          </div>
+          <SCard style={{background:"#F5F3FF",border:"1px solid #DDD6FE"}}>
+            <div style={{fontSize:11,color:"#5B21B6",lineHeight:1.6}}>{lang==="id"?"Preattentive attributes berlaku juga untuk teks di laporan, slide, dan narasi. Gunakan formatting berikut untuk mengarahkan perhatian pembaca ke informasi terpenting — tanpa mengubah kontennya.":"Preattentive attributes apply to text in reports, slides, and narratives too. Use the following formatting to direct reader attention to the most important information — without changing the content."}</div>
+          </SCard>
+
+          {PREATTENTIVE.filter(item=>item.type.startsWith("txt_")).map((item,i)=>(
+            <SCard key={i}>
+              <div style={{display:"flex",gap:10,alignItems:"flex-start"}}>
+                <div style={{width:32,height:32,borderRadius:8,background:"#F5F3FF",border:"1px solid #DDD6FE",display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,fontWeight:800,color:"#6D28D9",flexShrink:0}}>{item.icon}</div>
+                <div style={{flex:1}}>
+                  <div style={{fontWeight:700,fontSize:13,color:"#0F172A",marginBottom:2}}>{lang==="id"?item.attr:item.attrEn}</div>
+                  <div style={{fontSize:12,color:"#64748B",marginBottom:6,lineHeight:1.5}}>{lang==="id"?item.desc:item.descEn}</div>
+                  <PreattentiveDemo item={item} lang={lang}/>
+                  {item.tipId && (
+                    <div style={{marginTop:8,background:"#F5F3FF",border:"1px solid #DDD6FE",borderRadius:7,padding:"7px 10px"}}>
+                      <div style={{fontSize:10,fontWeight:700,color:"#6D28D9",marginBottom:3}}>💡 {lang==="id"?"Cara pakai":"How to use"}</div>
+                      <div style={{fontSize:11,color:"#5B21B6",lineHeight:1.6}}>{lang==="id"?item.tipId:item.tipEn}</div>
+                    </div>
+                  )}
+                  {item.whenId && (
+                    <div style={{display:"flex",gap:6,marginTop:6,flexWrap:"wrap"}}>
+                      <div style={{flex:1,minWidth:120,background:"#EDE9FE",borderRadius:6,padding:"5px 8px"}}>
+                        <div style={{fontSize:9,fontWeight:700,color:"#6D28D9",textTransform:"uppercase",marginBottom:2}}>✓ {lang==="id"?"Kapan":"When"}</div>
+                        <div style={{fontSize:10,color:"#4C1D95",lineHeight:1.4}}>{lang==="id"?item.whenId:item.whenEn}</div>
+                      </div>
+                      <div style={{flex:1,minWidth:120,background:"#FEF2F2",borderRadius:6,padding:"5px 8px"}}>
+                        <div style={{fontSize:9,fontWeight:700,color:"#DC2626",textTransform:"uppercase",marginBottom:2}}>✕ {lang==="id"?"Hindari":"Avoid"}</div>
+                        <div style={{fontSize:10,color:"#991B1B",lineHeight:1.4}}>{lang==="id"?item.avoidId:item.avoidEn}</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </SCard>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── BOARD MODULE ─────────────────────────────────────────────────────────────
+function BoardUseCaseIllustration({ lang, t }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div style={{marginBottom:14}}>
+      <div style={{background:"#F5F3FF",border:"1px solid #DDD6FE",borderRadius:10,padding:"12px 14px"}}>
+        <div style={{fontWeight:700,fontSize:13,color:"#7C3AED",marginBottom:4}}>🗂️ {t.whatIsTitle}</div>
+        <div style={{fontSize:12,color:"#5B21B6",lineHeight:1.6,marginBottom:8}}>{t.whatIsDesc}</div>
+        <button onClick={()=>setShow(!show)} style={{fontSize:11,color:"#7C3AED",background:"#EDE9FE",border:"1px solid #DDD6FE",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontFamily:"Plus Jakarta Sans,sans-serif",fontWeight:600}}>
+          {show?t.hideExample:t.showExample}: {t.exampleTitle}
+        </button>
+        {show && (
+          <div style={{marginTop:10,display:"flex",flexDirection:"column",gap:5}}>
+            {BOARD_EXAMPLE.map((item,i)=>{
+              const cfg=CARD_CFG[item.type];
+              return (
+                <div key={i} style={{display:"flex",gap:8,alignItems:"flex-start",padding:"7px 10px",background:cfg.bg,border:`1px solid ${cfg.border}`,borderRadius:8}}>
+                  <span style={{fontSize:14,flexShrink:0}}>{cfg.emoji}</span>
+                  <div>
+                    <span style={{fontSize:10,fontWeight:700,color:cfg.color,marginRight:6}}>{t.cardTypes[item.type]}</span>
+                    <span style={{fontSize:12,color:"#374151"}}>{lang==="id"?item.text.id:item.text.en}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function BoardTemplatesView({ lang, t, onBack, onApply }) {
+  return (
+    <div>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+        <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",fontSize:20,color:"#64748B",padding:0,lineHeight:1}}>←</button>
+        <div>
+          <h2 style={{fontSize:18,fontWeight:700,color:"#0F172A",margin:0}}>{t.templates}</h2>
+          <p style={{color:"#64748B",fontSize:12,marginTop:2}}>{lang==="id"?"Pilih template untuk mulai":"Choose a template to get started"}</p>
+        </div>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:12}}>
+        {BOARD_TEMPLATES.map(tpl=>(
+          <SCard key={tpl.id}>
+            <div style={{display:"flex",gap:12,alignItems:"center",marginBottom:10}}>
+              <span style={{fontSize:26}}>{tpl.icon}</span>
+              <div>
+                <div style={{fontWeight:700,fontSize:14,color:"#0F172A"}}>{tpl.name[lang]||tpl.name.id}</div>
+                <div style={{fontSize:12,color:"#64748B",marginTop:2}}>{tpl.desc[lang]||tpl.desc.id}</div>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:12}}>
+              {tpl.cards.map((c,i)=>{const cfg=CARD_CFG[c.type];return <span key={i} style={{fontSize:10,padding:"3px 7px",borderRadius:20,background:cfg.bg,color:cfg.color,border:`1px solid ${cfg.border}`,fontWeight:600}}>{cfg.emoji} {t.cardTypes[c.type]}</span>;})}
+            </div>
+            <button onClick={()=>onApply(tpl)} style={{width:"100%",padding:"10px",borderRadius:8,border:"none",background:"#2563EB",color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer",fontFamily:"Plus Jakarta Sans,sans-serif"}}>{t.useTemplate}</button>
+          </SCard>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── PYRAMID THOUGHT: full content, no truncation, flexible height ──────────
+function PyramidThought({ result, t, lang }) {
+  if (!result?.cards) return null;
+  const isId = lang === "id";
+  const govern = result.cards.find(c => c.type === "answer");
+  const args   = result.cards.filter(c => c.type === "argument").slice(0,3);
+  const evs    = result.cards.filter(c => c.type === "evidence").slice(0,3);
+  const scqaMap = [
+    {key:"S", type:"situation",    color:"#0369A1", bg:"#E0F2FE", label:isId?"Situasi":"Situation"},
+    {key:"C", type:"complication", color:"#B91C1C", bg:"#FEE2E2", label:isId?"Komplikasi":"Complication"},
+    {key:"Q", type:"question",     color:"#B45309", bg:"#FEF3C7", label:isId?"Pertanyaan":"Question"},
+  ];
+  if (!govern && args.length === 0) return null;
+
+  const Arrow = () => (
+    <div style={{textAlign:"center",color:"#94A3B8",fontSize:16,lineHeight:"20px",margin:"4px 0"}}>↓</div>
+  );
+  const RowArrows = ({n}) => (
+    <div style={{display:"flex",margin:"4px 0"}}>
+      {Array(n).fill(0).map((_,i)=>(
+        <div key={i} style={{flex:1,textAlign:"center",color:"#94A3B8",fontSize:16,lineHeight:"20px"}}>↓</div>
+      ))}
+    </div>
+  );
+
+  return (
+    <div style={{marginBottom:14,border:"2px solid #1D4ED8",borderRadius:14,overflow:"hidden"}}>
+      {/* Header */}
+      <div style={{background:"#1D4ED8",padding:"10px 14px",display:"flex",alignItems:"center",gap:8}}>
+        <span style={{fontSize:16}}>🔺</span>
+        <span style={{fontSize:12,fontWeight:700,color:"#fff",letterSpacing:"0.3px"}}>
+          {isId?"Visualisasi Pyramid Thought (Minto)":"Pyramid Thought Visualization (Minto)"}
+        </span>
+      </div>
+
+      <div style={{padding:"12px 10px 14px",background:"#F8FAFC",display:"flex",flexDirection:"column"}}>
+
+        {/* ── SCQA strip ── */}
+        {result.scqa && (
+          <>
+            <div style={{fontSize:10,fontWeight:700,color:"#64748B",textTransform:"uppercase",letterSpacing:1,textAlign:"center",marginBottom:6}}>
+              SCQA · Narrative Setup
+            </div>
+            <div style={{display:"flex",gap:6,marginBottom:4}}>
+              {scqaMap.map(item => {
+                const card = result.cards.find(c => c.type === item.type);
+                const text = card?.content || result.scqa[item.type] || "—";
+                return (
+                  <div key={item.key} style={{flex:1,background:item.bg,borderRadius:8,padding:"8px 8px",borderTop:`3px solid ${item.color}`}}>
+                    <div style={{fontSize:10,fontWeight:800,color:item.color,marginBottom:3}}>
+                      {item.key} · {item.label}
+                    </div>
+                    <div style={{fontSize:11,color:"#1E293B",lineHeight:1.5}}>{text}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {/* ── Governing Thought ── */}
+        {govern && (
+          <>
+            <Arrow/>
+            <div style={{background:"#1D4ED8",borderRadius:10,padding:"12px 14px",textAlign:"center"}}>
+              <div style={{fontSize:10,color:"#BFDBFE",fontWeight:700,textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>
+                A · {isId?"Governing Thought · Answer First":"Governing Thought · Answer First"}
+              </div>
+              <div style={{fontSize:14,color:"#fff",fontWeight:700,lineHeight:1.6}}>{govern.content}</div>
+            </div>
+          </>
+        )}
+
+        {/* ── Key Arguments ── */}
+        {args.length > 0 && (
+          <>
+            <RowArrows n={args.length}/>
+            <div style={{fontSize:10,fontWeight:700,color:"#5B21B6",textTransform:"uppercase",textAlign:"center",letterSpacing:1,marginBottom:6}}>
+              {isId?"Argumen Kunci (MECE)":"Key Arguments (MECE)"}
+            </div>
+            <div style={{display:"flex",gap:6}}>
+              {args.map((arg,i)=>(
+                <div key={i} style={{flex:1,background:"#5B21B6",borderRadius:8,padding:"10px 8px",minWidth:0}}>
+                  <div style={{fontSize:10,color:"#DDD6FE",fontWeight:700,marginBottom:4}}>A{i+1}</div>
+                  <div style={{fontSize:11,color:"#fff",lineHeight:1.6,wordBreak:"break-word"}}>{arg.content}</div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* ── Evidence ── */}
+        {evs.length > 0 && (
+          <>
+            <RowArrows n={evs.length}/>
+            <div style={{fontSize:10,fontWeight:700,color:"#065F46",textTransform:"uppercase",textAlign:"center",letterSpacing:1,marginBottom:6}}>
+              {isId?"Bukti & Data":"Evidence & Data"}
+            </div>
+            <div style={{display:"flex",gap:6}}>
+              {evs.map((ev,i)=>(
+                <div key={i} style={{flex:1,background:"#065F46",borderRadius:8,padding:"10px 8px",minWidth:0}}>
+                  <div style={{fontSize:10,color:"#A7F3D0",fontWeight:700,marginBottom:4}}>E{i+1}</div>
+                  <div style={{fontSize:11,color:"#D1FAE5",lineHeight:1.6,wordBreak:"break-word"}}>{ev.content}</div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+      </div>
+    </div>
+  );
+}
+
+function PyramidVisual({ lang }) {
+  const id = lang === "id";
+  return (
+    <div style={{margin:"8px 0 4px",overflowX:"auto"}}>
+      <svg width="290" height="106" viewBox="0 0 290 106" style={{maxWidth:"100%",display:"block",margin:"0 auto"}}>
+        {/* ── PYRAMID (left side) — pure shapes, no text inside ── */}
+        <polygon points="73,4 106,38 40,38"          fill="#1D4ED8"/>
+        <polygon points="36,42 110,42 124,70 22,70"  fill="#5B21B6"/>
+        <polygon points="18,74 128,74 140,100 6,100" fill="#065F46"/>
+
+        {/* ── DASHED CONNECTOR LINES ── */}
+        <line x1="106" y1="21" x2="144" y2="21" stroke="#CBD5E1" strokeWidth="1" strokeDasharray="2,2"/>
+        <line x1="124" y1="56" x2="144" y2="56" stroke="#CBD5E1" strokeWidth="1" strokeDasharray="2,2"/>
+        <line x1="140" y1="87" x2="144" y2="87" stroke="#CBD5E1" strokeWidth="1" strokeDasharray="2,2"/>
+
+        {/* ── LABELS (right side) — color bar + title + subtitle ── */}
+        {/* Apex */}
+        <rect x="146" y="10" width="5" height="24" rx="2" fill="#1D4ED8"/>
+        <text x="157" y="20" fontSize="11" fontWeight="700" fontFamily="Plus Jakarta Sans,sans-serif" fill="#1D4ED8">Governing Thought</text>
+        <text x="157" y="32" fontSize="9"  fontFamily="Plus Jakarta Sans,sans-serif" fill="#94A3B8">Answer First · Apex</text>
+
+        {/* Key Arguments */}
+        <rect x="146" y="44" width="5" height="24" rx="2" fill="#5B21B6"/>
+        <text x="157" y="54" fontSize="11" fontWeight="700" fontFamily="Plus Jakarta Sans,sans-serif" fill="#5B21B6">{id?"Argumen Kunci":"Key Arguments"}</text>
+        <text x="157" y="66" fontSize="9"  fontFamily="Plus Jakarta Sans,sans-serif" fill="#94A3B8">MECE · ×3</text>
+
+        {/* Evidence */}
+        <rect x="146" y="78" width="5" height="24" rx="2" fill="#065F46"/>
+        <text x="157" y="88" fontSize="11" fontWeight="700" fontFamily="Plus Jakarta Sans,sans-serif" fill="#065F46">{id?"Bukti & Data":"Evidence & Data"}</text>
+        <text x="157" y="100" fontSize="9" fontFamily="Plus Jakarta Sans,sans-serif" fill="#94A3B8">{id?"Per argumen · ×3":"Per argument · ×3"}</text>
+      </svg>
+    </div>
+  );
+}
+
+function SCQADisplay({ scqa, lang, t }) {
+  const rows = [
+    {key:"situation",   label:t.situationLabel,    color:"#0369A1", bg:"#F0F9FF", border:"#BAE6FD"},
+    {key:"complication",label:t.complicationLabel, color:"#B91C1C", bg:"#FEF2F2", border:"#FCA5A5"},
+    {key:"question",    label:t.questionLabel,     color:"#B45309", bg:"#FFFBEB", border:"#FDE68A"},
+    {key:"answer",      label:t.answerLabel,       color:"#1D4ED8", bg:"#EFF6FF", border:"#93C5FD"},
+  ];
+  return (
+    <SCard style={{marginBottom:12,border:"2px solid #6D28D9"}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+        <span style={{fontSize:16}}>🔺</span>
+        <div style={{fontWeight:700,fontSize:13,color:"#6D28D9"}}>{t.scqaTitle}</div>
+        <span style={{fontSize:10,color:"#94A3B8",marginLeft:"auto"}}>Barbara Minto</span>
+      </div>
+      <div style={{display:"flex",flexDirection:"column",gap:6}}>
+        {rows.map(row=>(
+          <div key={row.key} style={{display:"flex",gap:8,padding:"7px 10px",background:row.bg,border:`1px solid ${row.border}`,borderRadius:8,alignItems:"flex-start"}}>
+            <span style={{fontSize:10,fontWeight:800,color:row.color,minWidth:90,flexShrink:0,paddingTop:1}}>{row.label}</span>
+            <span style={{fontSize:12,color:"#374151",lineHeight:1.5}}>{scqa[row.key]||"—"}</span>
+          </div>
+        ))}
+      </div>
+    </SCard>
+  );
+}
+
+function BoardAIView({ lang, t, apiKey, onBack, onApply }) {
+  const [ctx, setCtx] = useState("");
+  const [mode, setMode] = useState("pyramid"); // "classic" | "pyramid"
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const generate = async () => {
+    if (!ctx.trim()) return;
+    setLoading(true); setResult(null);
+    try {
+      let sys, prompt;
+      if (mode === "pyramid") {
+        sys = `You are a data storytelling expert trained on Barbara Minto's Pyramid Principle. Apply the SCQA framework and pyramid logic to generate a structured storytelling board.
+
+PYRAMID PRINCIPLE RULES:
+1. ANSWER FIRST: State the Governing Thought (main recommendation) upfront — never bury the lead.
+2. VERTICAL LOGIC: Each level answers the "Why?" from the level above.
+3. HORIZONTAL LOGIC: Arguments at the same level must be same category, ordered logically.
+4. MECE: Arguments must be Mutually Exclusive (no overlaps) and Collectively Exhaustive (no gaps).
+5. Think BOTTOM-UP (evidence→argument→answer), communicate TOP-DOWN (answer first).
+
+SCQA FRAMEWORK:
+- Situation: Stable, uncontroversial facts the audience already knows
+- Complication: What changed / why current state is no longer acceptable
+- Question: The single question that naturally arises from the complication
+- Answer: The Governing Thought — single clear recommendation stated upfront
+
+STRUCTURE: situation → complication → question → answer (Governing Thought) → [argument + evidence] × 3 → action
+
+Respond ONLY with valid JSON (no markdown):
+{"scqa":{"situation":"max 15 words","complication":"max 15 words","question":"max 12 words","answer":"max 20 words"},"cards":[{"type":"situation|complication|question|answer|argument|evidence|action","content":"max 20 words"}],"pyramidLogic":"why these 3 arguments are MECE","tips":["max 10 words"]}
+Generate exactly: 1 situation, 1 complication, 1 question, 1 answer, 3 arguments each with 1 evidence, 1 action = 11 cards total. Respond in ${lang==="id"?"Indonesian":"English"}.`;
+        prompt = `Apply Minto Pyramid Principle to this data context: ${ctx}`;
+      } else {
+        sys = `You are a data storytelling expert. Generate storytelling board cards. Respond ONLY with valid JSON (no markdown):
+{"cards":[{"type":"hook|context|insight|chart|action|conclusion","content":"max 20 words"}],"tips":["max 10 words"]}
+Generate exactly 5 cards, each content MAX 20 words, tips MAX 2 items. Respond in ${lang==="id"?"Indonesian":"English"}.`;
+        prompt = `Generate storytelling board for: ${ctx}`;
+      }
+      const txt = await callClaude({apiKey, messages:[{role:"user",content:prompt}], system:sys, maxTokens:1800});
+      setResult(safeJSON(txt));
+    } catch(e) { setResult({error:e.message}); }
+    setLoading(false);
+  };
+
+  return (
+    <div>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+        <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",fontSize:20,color:"#64748B",padding:0,lineHeight:1}}>←</button>
+        <h2 style={{fontSize:18,fontWeight:700,color:"#0F172A",margin:0}}>{t.aiAssistTitle}</h2>
+      </div>
+      {!apiKey ? <NoKeyBanner msg={t.noKey}/> : (
+        <div>
+          {/* Mode toggle */}
+          <div style={{display:"flex",gap:6,marginBottom:12}}>
+            <button onClick={()=>{setMode("pyramid");setResult(null);}} style={{flex:1,padding:"9px 0",borderRadius:8,border:`2px solid ${mode==="pyramid"?"#6D28D9":"#E2E8F0"}`,background:mode==="pyramid"?"#F5F3FF":"#fff",color:mode==="pyramid"?"#6D28D9":"#64748B",fontWeight:mode==="pyramid"?700:500,fontSize:12,cursor:"pointer",fontFamily:"Plus Jakarta Sans,sans-serif"}}>
+              🔺 {t.pyramidMode}
+            </button>
+            <button onClick={()=>{setMode("classic");setResult(null);}} style={{flex:1,padding:"9px 0",borderRadius:8,border:`2px solid ${mode==="classic"?"#2563EB":"#E2E8F0"}`,background:mode==="classic"?"#EFF6FF":"#fff",color:mode==="classic"?"#2563EB":"#64748B",fontWeight:mode==="classic"?700:500,fontSize:12,cursor:"pointer",fontFamily:"Plus Jakarta Sans,sans-serif"}}>
+              📋 {t.classicMode}
+            </button>
+          </div>
+
+          {/* Pyramid explanation card */}
+          {mode==="pyramid" && (
+            <SCard style={{background:"linear-gradient(135deg,#F5F3FF,#EFF6FF)",border:"1px solid #C4B5FD",marginBottom:12}}>
+              <PyramidVisual lang={lang}/>
+              <div style={{fontSize:11,color:"#6D28D9",fontWeight:600,textAlign:"center",marginBottom:6}}>Minto Pyramid Principle</div>
+              <div style={{fontSize:11,color:"#5B21B6",lineHeight:1.6}}>{t.pyramidTip}</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:6,marginTop:8}}>
+                {[
+                  {label:"SCQA",desc:lang==="id"?"Situation→Complication→Question→Answer":"Situation→Complication→Question→Answer"},
+                  {label:"MECE",desc:lang==="id"?"Mutually Exclusive, Collectively Exhaustive":"Mutually Exclusive, Collectively Exhaustive"},
+                  {label:lang==="id"?"Answer First":"Answer First",desc:lang==="id"?"Governing Thought disampaikan di awal":"Governing Thought delivered upfront"},
+                ].map((item,i)=>(
+                  <div key={i} style={{background:"#EDE9FE",borderRadius:6,padding:"4px 8px"}}>
+                    <span style={{fontSize:10,fontWeight:700,color:"#5B21B6"}}>{item.label}</span>
+                    <span style={{fontSize:10,color:"#7C3AED",marginLeft:4}}>{item.desc}</span>
+                  </div>
+                ))}
+              </div>
+            </SCard>
+          )}
+
+          <SCard style={{marginBottom:12}}>
+            <div style={{fontWeight:600,fontSize:13,color:"#0F172A",marginBottom:6}}>{t.aiContextLabel}</div>
+            <textarea value={ctx} onChange={e=>setCtx(e.target.value)} placeholder={t.aiContextPh} rows={4}
+              style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid #E2E8F0",fontSize:13,resize:"vertical",outline:"none",fontFamily:"Plus Jakarta Sans,sans-serif",color:"#374151",boxSizing:"border-box"}}/>
+            <button onClick={generate} disabled={loading||!ctx.trim()} style={{width:"100%",marginTop:10,padding:"12px",borderRadius:10,border:"none",cursor:loading?"not-allowed":"pointer",background:loading?"#94A3B8":mode==="pyramid"?"#6D28D9":"#2563EB",color:"#fff",fontWeight:700,fontSize:14,fontFamily:"Plus Jakarta Sans,sans-serif"}}>
+              {loading ? <Dots/> : (mode==="pyramid"?"🔺 "+t.generateCards:t.generateCards)}
+            </button>
+          </SCard>
+
+          {result && result.error && <div style={{padding:12,background:"#FEF2F2",borderRadius:8,color:"#991B1B",fontSize:13,marginBottom:12}}>⚠ {result.error}</div>}
+
+          {result && result.cards && (
+            <div>
+              {/* Pyramid Thought visualization — actual content as pyramid tree */}
+              {mode==="pyramid" && result.scqa && (
+                <PyramidThought result={result} t={t} lang={lang}/>
+              )}
+
+              {/* SCQA breakdown (text version, collapsible) */}
+              {result.scqa && <SCQADisplay scqa={result.scqa} lang={lang} t={t}/>}
+
+              {/* Pyramid logic explanation */}
+              {result.pyramidLogic && (
+                <SCard style={{background:"#F5F3FF",border:"1px solid #DDD6FE",marginBottom:12}}>
+                  <div style={{fontSize:11,fontWeight:700,color:"#6D28D9",marginBottom:4}}>🔑 {t.pyramidLogicLabel}</div>
+                  <div style={{fontSize:12,color:"#5B21B6"}}>{result.pyramidLogic}</div>
+                </SCard>
+              )}
+
+              {/* Card previews */}
+              <div style={{fontWeight:700,fontSize:13,color:"#0F172A",marginBottom:8}}>Preview ({result.cards.length} {lang==="id"?"kartu":"cards"}):</div>
+              <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:12}}>
+                {result.cards.map((c,i)=>{
+                  const cfg=CARD_CFG[c.type]||CARD_CFG.insight;
+                  const isPyramid=cfg.pyramid;
+                  return (
+                    <div key={i} style={{background:cfg.bg,border:`1px solid ${cfg.border}`,borderRadius:10,padding:"8px 10px",
+                      borderLeft:isPyramid?`4px solid ${cfg.color}`:`1px solid ${cfg.border}`}}>
+                      <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:3}}>
+                        <span style={{fontSize:11,fontWeight:700,color:cfg.color}}>{cfg.emoji} {t.cardTypes[c.type]||c.type}</span>
+                        {isPyramid && <span style={{fontSize:9,color:"#94A3B8",fontWeight:500}}>
+                          {cfg.level===1?"Apex":cfg.level===2?"Arg":cfg.level===3?"Evidence":"SCQA"}
+                        </span>}
+                      </div>
+                      <div style={{fontSize:12,color:"#374151",lineHeight:1.5}}>{c.content}</div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {result.tips && result.tips.length > 0 && (
+                <SCard style={{background:"#EFF6FF",border:"1px solid #BFDBFE",marginBottom:12}}>
+                  <div style={{fontSize:11,fontWeight:700,color:"#2563EB",marginBottom:6}}>💡 Tips</div>
+                  {result.tips.map((tip,i)=><div key={i} style={{fontSize:12,color:"#1E40AF",marginBottom:3}}>• {tip}</div>)}
+                </SCard>
+              )}
+
+              <button onClick={()=>onApply(result.cards)} style={{width:"100%",padding:"12px",borderRadius:10,border:"none",background:mode==="pyramid"?"#6D28D9":"#10B981",color:"#fff",fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"Plus Jakarta Sans,sans-serif"}}>
+                ✓ {lang==="id"?"Terapkan ke Board":"Apply to Board"}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BoardReviewView({ lang, t, apiKey, cards, onBack }) {
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const review = async () => {
+    if (!cards.length) return;
+    setLoading(true); setResult(null);
+    try {
+      const summary = cards.map((c,i)=>`${i+1}. [${c.type.toUpperCase()}] ${c.content}`).join("\n");
+      const sys = `You are a data storytelling coach. Review the board and give structured feedback. Respond ONLY with valid JSON (no markdown): {"overallScore":8,"narrative":"assessment","strengths":["s1"],"gaps":["g1"],"suggestions":["s1"],"missingCards":["type if missing"]} Respond in ${lang==="id"?"Indonesian":"English"}.`;
+      const txt = await callClaude({apiKey,messages:[{role:"user",content:`Review this storytelling board:\n\n${summary}`}],system:sys,maxTokens:1200});
+      setResult(safeJSON(txt));
+    } catch(e) { setResult({error:e.message}); }
+    setLoading(false);
+  };
+  return (
+    <div>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+        <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",fontSize:20,color:"#64748B",padding:0,lineHeight:1}}>←</button>
+        <h2 style={{fontSize:18,fontWeight:700,color:"#0F172A",margin:0}}>{t.reviewTitle}</h2>
+      </div>
+      {!apiKey ? <NoKeyBanner msg={t.noKey}/> : (
+        <div>
+          {!result && !loading && (
+            <div>
+              <SCard style={{marginBottom:12,background:"#F5F3FF",border:"1px solid #DDD6FE"}}><div style={{fontSize:13,color:"#5B21B6"}}>{lang==="id"?"AI akan mengevaluasi alur narasi board Anda berdasarkan prinsip storytelling.":"AI will evaluate your board's narrative flow based on storytelling principles."}</div></SCard>
+              <div style={{display:"flex",flexDirection:"column",gap:5,marginBottom:12}}>
+                {cards.map((c,i)=>{const cfg=CARD_CFG[c.type]||CARD_CFG.insight;return <div key={i} style={{display:"flex",gap:8,alignItems:"center",padding:"6px 10px",background:"#F8FAFC",borderRadius:8,border:"1px solid #E2E8F0"}}><span>{cfg.emoji}</span><span style={{fontSize:11,fontWeight:700,color:cfg.color,width:64,flexShrink:0}}>{t.cardTypes[c.type]}</span><span style={{fontSize:12,color:"#64748B",overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{c.content||(lang==="id"?"(kosong)":"(empty)")}</span></div>;})}
+              </div>
+              <button onClick={review} disabled={!cards.length} style={{width:"100%",padding:"12px",borderRadius:10,border:"none",background:cards.length?"#2563EB":"#CBD5E1",color:"#fff",fontWeight:700,fontSize:14,cursor:cards.length?"pointer":"not-allowed",fontFamily:"Plus Jakarta Sans,sans-serif"}}>{t.reviewBoard}</button>
+            </div>
+          )}
+          {loading && <div style={{textAlign:"center",padding:"40px 0"}}><Dots/></div>}
+          {result && result.error && <div style={{padding:12,background:"#FEF2F2",borderRadius:8,color:"#991B1B",fontSize:13}}>⚠ {result.error}</div>}
+          {result && !result.error && (
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              <SCard style={{background:"linear-gradient(135deg,#EFF6FF,#F5F3FF)",border:"1px solid #BFDBFE"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div style={{fontSize:13,color:"#374151",flex:1,paddingRight:12}}>{result.narrative}</div>
+                  <div style={{textAlign:"center",flexShrink:0}}><div style={{fontSize:30,fontWeight:800,color:result.overallScore>=7?"#10B981":result.overallScore>=5?"#F59E0B":"#EF4444"}}>{result.overallScore}</div><div style={{fontSize:10,color:"#94A3B8"}}>/10</div></div>
+                </div>
+              </SCard>
+              {result.strengths && result.strengths.length > 0 && <SCard style={{background:"#F0FDF4",border:"1px solid #86EFAC"}}><div style={{fontSize:11,fontWeight:700,color:"#166534",marginBottom:6}}>✓ {lang==="id"?"Kekuatan":"Strengths"}</div>{result.strengths.map((s,i)=><div key={i} style={{fontSize:12,color:"#15803D",marginBottom:2}}>• {s}</div>)}</SCard>}
+              {result.gaps && result.gaps.length > 0 && <SCard style={{background:"#FEF2F2",border:"1px solid #FECACA"}}><div style={{fontSize:11,fontWeight:700,color:"#991B1B",marginBottom:6}}>⚠ {lang==="id"?"Gap":"Gaps"}</div>{result.gaps.map((g,i)=><div key={i} style={{fontSize:12,color:"#B91C1C",marginBottom:2}}>• {g}</div>)}</SCard>}
+              {result.suggestions && result.suggestions.length > 0 && <SCard><div style={{fontSize:11,fontWeight:700,color:"#64748B",marginBottom:6}}>💡 {lang==="id"?"Saran":"Suggestions"}</div>{result.suggestions.map((s,i)=><div key={i} style={{fontSize:12,color:"#374151",marginBottom:4,display:"flex",gap:6}}><span style={{color:"#2563EB",flexShrink:0}}>→</span>{s}</div>)}</SCard>}
+              {result.missingCards && result.missingCards.length > 0 && <SCard style={{background:"#FFFBEB",border:"1px solid #FDE68A"}}><div style={{fontSize:11,fontWeight:700,color:"#92400E",marginBottom:6}}>➕ {lang==="id"?"Kartu yang Perlu Ditambahkan":"Cards to Add"}</div>{result.missingCards.map((m,i)=><div key={i} style={{fontSize:12,color:"#92400E",marginBottom:2}}>• {m}</div>)}</SCard>}
+              <button onClick={()=>setResult(null)} style={{padding:"10px",borderRadius:8,border:"1px solid #E2E8F0",background:"#fff",color:"#64748B",fontSize:13,cursor:"pointer",fontFamily:"Plus Jakarta Sans,sans-serif"}}>{lang==="id"?"Review Ulang":"Review Again"}</button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BoardSavedView({ lang, t, savedBoards, onBack, onLoad, onDelete }) {
+  return (
+    <div>
+      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+        <button onClick={onBack} style={{background:"none",border:"none",cursor:"pointer",fontSize:20,color:"#64748B",padding:0,lineHeight:1}}>←</button>
+        <h2 style={{fontSize:18,fontWeight:700,color:"#0F172A",margin:0}}>{t.savedBoards}</h2>
+      </div>
+      {savedBoards.length===0 ? <div style={{textAlign:"center",padding:"40px 0",color:"#94A3B8",fontSize:14}}>{t.noSavedBoards}</div> : (
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {savedBoards.map(b=>(
+            <SCard key={b.id}>
+              <div style={{fontWeight:700,fontSize:14,color:"#0F172A",marginBottom:4}}>{b.name}</div>
+              <div style={{fontSize:11,color:"#94A3B8",marginBottom:8}}>{b.cards.length} {lang==="id"?"kartu":"cards"} · {new Date(b.savedAt).toLocaleDateString()}</div>
+              <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:10}}>{b.cards.map((c,i)=>{const cfg=CARD_CFG[c.type]||CARD_CFG.insight;return <span key={i} style={{fontSize:11,padding:"2px 6px",borderRadius:20,background:cfg.bg,color:cfg.color,border:`1px solid ${cfg.border}`}}>{cfg.emoji}</span>;})}</div>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={()=>onLoad(b)} style={{flex:1,padding:"8px",borderRadius:8,border:"none",background:"#2563EB",color:"#fff",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"Plus Jakarta Sans,sans-serif"}}>{t.loadBoard}</button>
+                <button onClick={()=>onDelete(b.id)} style={{padding:"8px 12px",borderRadius:8,border:"1px solid #FECACA",background:"#FEF2F2",color:"#EF4444",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"Plus Jakarta Sans,sans-serif"}}>{t.deleteBoard}</button>
+              </div>
+            </SCard>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function BoardModule({ lang, apiKey }) {
+  const t = T[lang].board;
+  const SK = "hv_boards", AK = "hv_active_board";
+  const newCard = (type) => ({ id: Date.now()+Math.random(), type, content:"", editing:false });
+  const [cards, setCards] = useState(() => { try { return JSON.parse(localStorage.getItem(AK))||[]; } catch { return []; } });
+  const [boardName, setBoardName] = useState("My Board");
+  const [saved, setSaved] = useState(() => { try { return JSON.parse(localStorage.getItem(SK))||[]; } catch { return []; } });
+  const [view, setView] = useState("main");
+  const [addOpen, setAddOpen] = useState(false);
+  const [dragIdx, setDragIdx] = useState(null);
+  const [dragOver, setDragOver] = useState(null);
+  const [translating, setTranslating] = useState(false);
+
+  useEffect(() => { localStorage.setItem(AK, JSON.stringify(cards)); }, [cards]);
+
+  const translateBoard = async () => {
+    if (!apiKey || !cards.length || translating) return;
+    setTranslating(true);
+    try {
+      const targetLang = lang === "id" ? "Indonesian" : "English";
+      const payload = cards.map((c,i)=>(`${i}|${c.type}|${c.content}`)).join("\n");
+      const sys = `Translate card contents to ${targetLang}. Keep the meaning and conciseness. Return ONLY valid JSON (no markdown): {"cards":[{"idx":0,"content":"translated text"}]} One entry per card, same order.`;
+      const txt = await callClaude({apiKey, messages:[{role:"user",content:`Translate these board cards to ${targetLang}:\n${payload}`}], system:sys, maxTokens:1500});
+      const res = safeJSON(txt);
+      if (res?.cards) {
+        setCards(prev => prev.map((c,i) => {
+          const found = res.cards.find(x => x.idx === i || x.idx === String(i));
+          return found ? {...c, content: found.content} : c;
+        }));
+      }
+    } catch(e) { console.error("translate error", e); }
+    setTranslating(false);
+  };
+
+  const applyTemplate = (tpl) => {
+    const nc = tpl.cards.map((c,i) => ({id:Date.now()+i, type:c.type, content:c.c[lang]||c.c.id, editing:false}));
+    setCards(nc); setView("main");
+  };
+  const applyAI = (aiCards) => {
+    const nc = aiCards.map((c,i) => ({id:Date.now()+i, type:c.type, content:c.content, editing:false}));
+    setCards(nc); setView("main");
+  };
+  const saveBoard = () => {
+    const b = {id:Date.now(), name:boardName, cards, savedAt:new Date().toISOString()};
+    const u = [b, ...saved.filter(x=>x.name!==boardName)];
+    setSaved(u); localStorage.setItem(SK, JSON.stringify(u));
+  };
+  const loadBoard = (b) => { setCards(b.cards); setBoardName(b.name); setView("main"); };
+  const deleteBoard = (id) => { const u=saved.filter(b=>b.id!==id); setSaved(u); localStorage.setItem(SK, JSON.stringify(u)); };
+
+  const deleteCard = (id) => setCards(prev => prev.filter(c => c.id!==id));
+  const updateCard = (id, content) => setCards(prev => prev.map(c => c.id===id ? {...c,content} : c));
+  const toggleEdit = (id) => setCards(prev => prev.map(c => c.id===id ? {...c,editing:!c.editing} : c));
+  const moveCard = (idx, dir) => {
+    const to = idx+dir;
+    if (to<0||to>=cards.length) return;
+    const n=[...cards]; [n[idx],n[to]]=[n[to],n[idx]]; setCards(n);
+  };
+  const onDragEnd = () => {
+    if (dragIdx!==null && dragOver!==null && dragIdx!==dragOver) {
+      const n=[...cards]; const [m]=n.splice(dragIdx,1); n.splice(dragOver,0,m); setCards(n);
+    }
+    setDragIdx(null); setDragOver(null);
+  };
+
+  if (view==="templates") return <BoardTemplatesView lang={lang} t={t} onBack={()=>setView("main")} onApply={applyTemplate}/>;
+  if (view==="ai") return <BoardAIView lang={lang} t={t} apiKey={apiKey} onBack={()=>setView("main")} onApply={applyAI}/>;
+  if (view==="review") return <BoardReviewView lang={lang} t={t} apiKey={apiKey} cards={cards} onBack={()=>setView("main")}/>;
+  if (view==="saved") return <BoardSavedView lang={lang} t={t} savedBoards={saved} onBack={()=>setView("main")} onLoad={loadBoard} onDelete={deleteBoard}/>;
+
+  const types = Object.keys(CARD_CFG);
+  return (
+    <div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+        <div><h2 style={{fontSize:20,fontWeight:700,color:"#0F172A",margin:0}}>{t.title}</h2><p style={{color:"#64748B",fontSize:13,marginTop:2}}>{t.subtitle}</p></div>
+        <button onClick={()=>setView("saved")} style={{fontSize:11,color:"#2563EB",background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:6,padding:"4px 8px",cursor:"pointer",flexShrink:0}}>📁</button>
+      </div>
+
+      <BoardUseCaseIllustration lang={lang} t={t}/>
+
+      <div style={{display:"flex",gap:6,marginBottom:10}}>
+        <input value={boardName} onChange={e=>setBoardName(e.target.value)} placeholder={t.boardNamePh}
+          style={{flex:1,padding:"8px 10px",borderRadius:8,border:"1px solid #E2E8F0",fontSize:13,outline:"none",fontFamily:"Plus Jakarta Sans,sans-serif",color:"#374151"}}/>
+        <button onClick={saveBoard} style={{padding:"8px 14px",borderRadius:8,border:"none",background:"#10B981",color:"#fff",fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"Plus Jakarta Sans,sans-serif"}}>{t.saveBoard}</button>
+      </div>
+
+      <div style={{display:"flex",gap:6,marginBottom:6}}>
+        <button onClick={()=>setView("templates")} style={{flex:1,padding:"8px 0",borderRadius:8,border:"1px solid #DDD6FE",background:"#F5F3FF",color:"#7C3AED",fontWeight:600,fontSize:12,cursor:"pointer",fontFamily:"Plus Jakarta Sans,sans-serif"}}>📋 {t.templates}</button>
+        <button onClick={()=>setView("ai")} style={{flex:1,padding:"8px 0",borderRadius:8,border:"1px solid #BFDBFE",background:"#EFF6FF",color:"#2563EB",fontWeight:600,fontSize:12,cursor:"pointer",fontFamily:"Plus Jakarta Sans,sans-serif"}}>✨ {t.aiGenerate}</button>
+        <button onClick={()=>setView("review")} style={{flex:1,padding:"8px 0",borderRadius:8,border:"1px solid #A7F3D0",background:"#F0FDF4",color:"#059669",fontWeight:600,fontSize:12,cursor:"pointer",fontFamily:"Plus Jakarta Sans,sans-serif"}}>🔍 {t.aiReview}</button>
+      </div>
+      {cards.length>0 && apiKey && (
+        <button onClick={translateBoard} disabled={translating} style={{width:"100%",marginBottom:12,padding:"8px 0",borderRadius:8,border:"1px solid #E2E8F0",background:translating?"#F8FAFC":"#fff",color:translating?"#94A3B8":"#374151",fontWeight:600,fontSize:12,cursor:translating?"not-allowed":"pointer",fontFamily:"Plus Jakarta Sans,sans-serif",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+          <span style={{fontSize:13}}>{translating?"⏳":"🔄"}</span>
+          {translating
+            ? (lang==="id"?"Menerjemahkan...":"Translating...")
+            : (lang==="id"
+                ? "Terjemahkan semua kartu ke English"
+                : "Terjemahkan semua kartu ke Indonesia")}
+        </button>
+      )}
+
+      {cards.length===0 ? (
+        <div style={{textAlign:"center",padding:"36px 20px",color:"#94A3B8",fontSize:13,border:"2px dashed #E2E8F0",borderRadius:12}}><div style={{fontSize:32,marginBottom:8}}>📋</div>{t.emptyBoard}</div>
+      ) : (
+        <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:12}}>
+          {cards.map((card,idx)=>{
+            const cfg=CARD_CFG[card.type]||CARD_CFG.insight;
+            const isDrag=dragIdx===idx, isOver=dragOver===idx&&dragIdx!==idx;
+            return (
+              <div key={card.id} draggable
+                onDragStart={()=>setDragIdx(idx)} onDragEnter={()=>setDragOver(idx)}
+                onDragEnd={onDragEnd} onDragOver={e=>e.preventDefault()}
+                style={{border:`2px solid ${isOver?cfg.color:cfg.border}`,borderRadius:12,background:isDrag?"#F8FAFC":cfg.bg,opacity:isDrag?0.5:1,transition:"all 0.15s"}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px 0"}}>
+                  <span style={{fontSize:16}}>{cfg.emoji}</span>
+                  <span style={{fontSize:11,fontWeight:700,color:cfg.color,flex:1}}>{t.cardTypes[card.type]}</span>
+                  <button onClick={()=>moveCard(idx,-1)} disabled={idx===0} style={{background:"none",border:"none",cursor:idx===0?"default":"pointer",color:idx===0?"#E2E8F0":"#94A3B8",fontSize:14,padding:"0 2px"}}>{t.moveUp}</button>
+                  <button onClick={()=>moveCard(idx,1)} disabled={idx===cards.length-1} style={{background:"none",border:"none",cursor:idx===cards.length-1?"default":"pointer",color:idx===cards.length-1?"#E2E8F0":"#94A3B8",fontSize:14,padding:"0 2px"}}>{t.moveDown}</button>
+                  <button onClick={()=>toggleEdit(card.id)} style={{background:"none",border:"none",cursor:"pointer",color:card.editing?cfg.color:"#94A3B8",fontSize:11,fontWeight:600,padding:"0 4px"}}>{card.editing?t.doneEdit:t.editCard}</button>
+                  <button onClick={()=>deleteCard(card.id)} style={{background:"none",border:"none",cursor:"pointer",color:"#EF4444",fontSize:11,padding:"0 2px"}}>✕</button>
+                </div>
+                <div style={{padding:"6px 10px 8px"}}>
+                  {card.editing ? (
+                    <textarea value={card.content} onChange={e=>updateCard(card.id,e.target.value)} placeholder={t.cardPh[card.type]} autoFocus rows={3}
+                      style={{width:"100%",padding:"8px",borderRadius:6,border:`1px solid ${cfg.border}`,fontSize:13,resize:"vertical",outline:"none",fontFamily:"Plus Jakarta Sans,sans-serif",color:"#374151",background:"rgba(255,255,255,0.8)",boxSizing:"border-box"}}/>
+                  ) : (
+                    <div onClick={()=>toggleEdit(card.id)} style={{fontSize:13,color:card.content?"#374151":"#CBD5E1",minHeight:36,cursor:"text",lineHeight:1.6,whiteSpace:"pre-wrap"}}>{card.content||t.cardPh[card.type]}</div>
+                  )}
+                </div>
+                <div style={{textAlign:"center",fontSize:9,color:cfg.color+"50",paddingBottom:3,userSelect:"none"}}>⠿ drag</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div style={{position:"relative"}}>
+        <button onClick={()=>setAddOpen(!addOpen)} style={{width:"100%",padding:"12px",borderRadius:10,border:"2px dashed #CBD5E1",background:"#F8FAFC",color:"#64748B",fontWeight:600,fontSize:13,cursor:"pointer",fontFamily:"Plus Jakarta Sans,sans-serif"}}>+ {t.addCard}</button>
+        {addOpen && (
+          <div style={{position:"absolute",bottom:"calc(100% + 8px)",left:0,right:0,background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:8,boxShadow:"0 8px 24px rgba(0,0,0,0.12)",zIndex:50}}>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6}}>
+              {types.map(type=>{const cfg=CARD_CFG[type];return <button key={type} onClick={()=>{setCards(prev=>[...prev,newCard(type)]);setAddOpen(false);}} style={{padding:"10px 8px",borderRadius:8,border:`1px solid ${cfg.border}`,background:cfg.bg,color:cfg.color,fontWeight:700,fontSize:12,cursor:"pointer",fontFamily:"Plus Jakarta Sans,sans-serif",textAlign:"left"}}>{cfg.emoji} {t.cardTypes[type]}</button>;})}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {cards.length>0 && (
+        <div style={{marginTop:14}}>
+          {/* Pyramid badge */}
+          {cards.some(c=>CARD_CFG[c.type]?.pyramid) && (
+            <div style={{display:"flex",alignItems:"center",gap:6,padding:"6px 10px",background:"linear-gradient(135deg,#F5F3FF,#EFF6FF)",border:"1px solid #C4B5FD",borderRadius:8,marginBottom:8}}>
+              <span style={{fontSize:13}}>🔺</span>
+              <div style={{flex:1}}>
+                <span style={{fontSize:11,fontWeight:700,color:"#6D28D9"}}>Minto Pyramid Principle</span>
+                <span style={{fontSize:10,color:"#94A3B8",marginLeft:6}}>
+                  {lang==="id"?"Governing Thought → Argumen MECE → Bukti":"Governing Thought → MECE Arguments → Evidence"}
+                </span>
+              </div>
+              <div style={{display:"flex",gap:3}}>
+                {[{l:1,c:"#1D4ED8"},{l:2,c:"#6D28D9"},{l:3,c:"#065F46"}].map(({l,c})=>{
+                  const count=cards.filter(card=>CARD_CFG[card.type]?.level===l).length;
+                  return count>0?<span key={l} style={{fontSize:10,padding:"2px 6px",borderRadius:20,background:c+"20",color:c,fontWeight:700}}>{count}</span>:null;
+                })}
+              </div>
+            </div>
+          )}
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:11,color:"#94A3B8",marginBottom:4}}>
+            <span>{cards.length} {lang==="id"?"kartu":"cards"}</span>
+            <span>{types.filter(tp=>cards.some(c=>c.type===tp)).length}/{types.length} {lang==="id"?"tipe":"types"}</span>
+          </div>
+          <div style={{height:4,background:"#E2E8F0",borderRadius:2,overflow:"hidden"}}>
+            <div style={{height:"100%",borderRadius:2,background:"linear-gradient(90deg,#7C3AED,#2563EB)",width:`${(types.filter(tp=>cards.some(c=>c.type===tp)).length/types.length)*100}%`,transition:"width 0.3s"}}/>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── RECOMMEND MODULE ─────────────────────────────────────────────────────────
+function RecommendModule({ lang, apiKey }) {
+  const t = T[lang].recommend;
+  const [csv, setCsv] = useState("");
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [drag, setDrag] = useState(false);
+  const [chartSvg, setChartSvg] = useState(null);
+  const fileRef = useRef();
+
+  const handleFile = (file) => { const r=new FileReader(); r.onload=e=>setCsv(e.target.result); r.readAsText(file); };
+
+  const offlineRec = () => {
+    const lines=csv.trim().split("\n"); const cols=lines[0]?.split(",").length||0; const rows=lines.length-1;
+    const hasTime=/jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|q1|q2|q3|q4|2020|2021|2022|2023|2024|2025|month|week|year|bulan|tahun/i.test(lines[0]);
+    let ct="Bar Chart", icon="▊", reason=lang==="id"?"Data kategorikal cocok untuk perbandingan dengan bar chart.":"Categorical data suits comparison with a bar chart.";
+    if(hasTime){ct="Line Chart";icon="↗";reason=lang==="id"?"Terdeteksi data time-series — line chart ideal untuk tren.":"Time-series detected — line chart ideal for trends.";}
+    else if(cols>=3){ct="Grouped Bar";icon="▊▊";reason=lang==="id"?"Multiple kolom — grouped bar untuk perbandingan multi-variabel.":"Multiple columns — grouped bar for multi-variable comparison.";}
+    else if(rows<=6){ct="Pie Chart";icon="◔";reason=lang==="id"?"Sedikit kategori — pertimbangkan pie chart untuk proporsi.":"Few categories — consider pie chart for proportions.";}
+    setResult({offline:true, summary:`${rows} ${lang==="id"?"baris":"rows"}, ${cols} ${lang==="id"?"kolom":"cols"}`, primaryRecommendation:{chartType:ct,icon,reason,pros:[]},alternativeRecommendations:[],dataInsights:[lang==="id"?`Untuk analisis lebih akurat, masukkan API key di Pengaturan`:`For more accurate analysis, add API key in Settings`],warnings:[]});
+    tryChartPreview(ct);
+  };
+
+  const tryChartPreview = (chartType) => {
+    const parsed = parseCSVForChart(csv);
+    if (!parsed) return;
+    const colors = COLOR_SCHEMES.blue;
+    const type = chartType.toLowerCase().includes("line")?"line":chartType.toLowerCase().includes("pie")?"pie":"bar";
+    const svg = buildSVG(type, parsed.title, parsed.labels, parsed.values, colors, 400, 240);
+    setChartSvg(svg);
+  };
+
+  const analyze = async () => {
+    if (!csv.trim()) return;
+    if (!apiKey) { offlineRec(); return; }
+    setLoading(true); setError(""); setResult(null); setChartSvg(null);
+    try {
+      const sys=`You are a data visualization expert. Analyze CSV/table data and recommend chart types. Respond ONLY with valid JSON (no markdown):
+{"summary":"brief description","primaryRecommendation":{"chartType":"name","icon":"emoji","reason":"why best","pros":["pro1","pro2"],"exampleTitle":"suggested title"},"alternativeRecommendations":[{"chartType":"name","icon":"emoji","reason":"brief reason","whenToUse":"condition"}],"dataInsights":["insight1"],"warnings":["warning if any"]}
+Respond in ${lang==="id"?"Indonesian":"English"}.`;
+      const txt=await callClaude({apiKey,messages:[{role:"user",content:`Analyze this data:\n\n${csv.slice(0,3000)}`}],system:sys});
+      const parsed=safeJSON(txt);
+      setResult(parsed);
+      tryChartPreview(parsed.primaryRecommendation?.chartType||"bar");
+    } catch(e) { setError(e.message||T[lang].common.error); }
+    setLoading(false);
+  };
+
+  return (
+    <div>
+      <h2 style={{fontSize:20,fontWeight:700,color:"#0F172A",margin:"0 0 4px"}}>{t.title}</h2>
+      <p style={{color:"#64748B",fontSize:13,marginBottom:12}}>{t.subtitle}</p>
+      {!apiKey && <div style={{background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:8,padding:"8px 12px",fontSize:12,color:"#92400E",marginBottom:10}}>⚡ {t.noKey}</div>}
+      <div onClick={()=>fileRef.current?.click()} onDragOver={e=>{e.preventDefault();setDrag(true);}} onDragLeave={()=>setDrag(false)}
+        onDrop={e=>{e.preventDefault();setDrag(false);const f=e.dataTransfer.files[0];if(f)handleFile(f);}}
+        style={{border:`2px dashed ${drag?"#2563EB":"#CBD5E1"}`,borderRadius:12,padding:"14px 20px",textAlign:"center",cursor:"pointer",background:drag?"#EFF6FF":"#F8FAFC",transition:"all 0.15s",marginBottom:10}}>
+        <div style={{fontSize:26,marginBottom:4}}>📂</div>
+        <div style={{fontSize:13,color:"#64748B"}}>{t.dropHint}</div>
+        <input ref={fileRef} type="file" accept=".csv,.txt,.tsv" style={{display:"none"}} onChange={e=>e.target.files[0]&&handleFile(e.target.files[0])}/>
+      </div>
+      <textarea value={csv} onChange={e=>setCsv(e.target.value)} placeholder={t.paste}
+        style={{width:"100%",minHeight:90,padding:10,borderRadius:8,border:"1px solid #E2E8F0",fontSize:12,fontFamily:"monospace",resize:"vertical",outline:"none",color:"#374151",boxSizing:"border-box",marginBottom:10}}/>
+      <button onClick={analyze} disabled={loading||!csv.trim()} style={{width:"100%",padding:"12px",borderRadius:10,border:"none",cursor:loading?"not-allowed":"pointer",background:loading?"#94A3B8":"#2563EB",color:"#fff",fontWeight:700,fontSize:14,fontFamily:"Plus Jakarta Sans,sans-serif"}}>
+        {loading?<Dots/>:apiKey?t.analyze:(lang==="id"?"Analisis (Offline)":"Analyze (Offline)")}
+      </button>
+      {error && <div style={{marginTop:10,padding:12,background:"#FEF2F2",borderRadius:8,color:"#991B1B",fontSize:13}}>⚠ {error}</div>}
+      {result && (
+        <div style={{marginTop:14,display:"flex",flexDirection:"column",gap:10}}>
+          {result.offline && <div style={{background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:8,padding:"6px 10px",fontSize:11,color:"#92400E"}}>⚡ {lang==="id"?"Rekomendasi berbasis aturan (offline)":"Rule-based recommendation (offline)"}</div>}
+          <SCard style={{background:"#F0FDF4",border:"1px solid #86EFAC"}}>
+            <div style={{fontSize:11,fontWeight:700,color:"#166534",textTransform:"uppercase",letterSpacing:1}}>Summary</div>
+            <div style={{fontSize:13,color:"#15803D",marginTop:4}}>{result.summary}</div>
+          </SCard>
+          {result.dataInsights && result.dataInsights.length>0 && <SCard><div style={{fontSize:11,fontWeight:700,color:"#64748B",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>💡 Insights</div>{result.dataInsights.map((ins,i)=><div key={i} style={{fontSize:12,color:"#374151",display:"flex",gap:6,marginBottom:4}}><span style={{color:"#2563EB",flexShrink:0}}>→</span>{ins}</div>)}</SCard>}
+          <SCard style={{border:"2px solid #2563EB"}}>
+            <div style={{display:"flex",gap:10,alignItems:"center",marginBottom:10}}>
+              <div style={{width:42,height:42,borderRadius:10,background:"#EFF6FF",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>{result.primaryRecommendation.icon}</div>
+              <div><div style={{fontSize:11,fontWeight:700,color:"#2563EB",textTransform:"uppercase",letterSpacing:1}}>⭐ {lang==="id"?"Rekomendasi Utama":"Top Recommendation"}</div><div style={{fontWeight:700,fontSize:16,color:"#0F172A"}}>{result.primaryRecommendation.chartType}</div></div>
+            </div>
+            <div style={{fontSize:13,color:"#374151",marginBottom:8}}>{result.primaryRecommendation.reason}</div>
+            {result.primaryRecommendation.pros && result.primaryRecommendation.pros.map((p,i)=><div key={i} style={{display:"flex",gap:6,fontSize:12,color:"#374151",marginBottom:3}}><span style={{color:"#10B981"}}>✓</span>{p}</div>)}
+            {result.primaryRecommendation.exampleTitle && <div style={{marginTop:8,padding:"6px 10px",background:"#F8FAFC",borderRadius:8,fontSize:12,color:"#64748B"}}><span style={{fontWeight:600}}>{lang==="id"?"Judul contoh:":"Example title:"}</span> {result.primaryRecommendation.exampleTitle}</div>}
+          </SCard>
+          {chartSvg && (
+            <SCard>
+              <div style={{fontSize:11,fontWeight:700,color:"#64748B",textTransform:"uppercase",letterSpacing:1,marginBottom:10}}>📊 {t.chartPreview}</div>
+              <div style={{overflowX:"auto"}} dangerouslySetInnerHTML={{__html:chartSvg}}/>
+            </SCard>
+          )}
+          {result.alternativeRecommendations && result.alternativeRecommendations.length>0 && <SCard><div style={{fontSize:11,fontWeight:700,color:"#64748B",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>{lang==="id"?"Alternatif":"Alternatives"}</div>{result.alternativeRecommendations.map((alt,i)=><div key={i} style={{display:"flex",gap:10,padding:"8px 0",borderBottom:i<result.alternativeRecommendations.length-1?"1px solid #F1F5F9":"none"}}><span style={{fontSize:18}}>{alt.icon}</span><div><div style={{fontWeight:700,fontSize:13,color:"#0F172A"}}>{alt.chartType}</div><div style={{fontSize:12,color:"#64748B"}}>{alt.reason}</div>{alt.whenToUse&&<div style={{fontSize:11,color:"#94A3B8",marginTop:2}}>{lang==="id"?"Pakai jika":"Use when"}: {alt.whenToUse}</div>}</div></div>)}</SCard>}
+          {result.warnings && result.warnings.length>0 && <SCard style={{background:"#FFFBEB",border:"1px solid #FDE68A"}}><div style={{fontSize:11,fontWeight:700,color:"#92400E",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>⚠ {lang==="id"?"Perhatian":"Warning"}</div>{result.warnings.map((w,i)=><div key={i} style={{fontSize:12,color:"#92400E",marginBottom:2}}>• {w}</div>)}</SCard>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── ASK MODULE ───────────────────────────────────────────────────────────────
+function AskModule({ lang, apiKey }) {
+  const t = T[lang].ask;
+  const [msgs, setMsgs] = useState([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(null);
+  const [showFaq, setShowFaq] = useState(false);
+  const bottomRef = useRef();
+  useEffect(()=>{ bottomRef.current?.scrollIntoView({behavior:"smooth"}); },[msgs,loading]);
+
+  const send = async (text) => {
+    const msg = text||input; if(!msg.trim()||loading||!apiKey) return;
+    const nm=[...msgs,{role:"user",content:msg}]; setMsgs(nm); setInput(""); setLoading(true);
+    try {
+      const sys=`You are a data visualization expert specializing in storytelling with data. Answer questions about chart types, best practices, color, and storytelling. Be concise but thorough. Respond in ${lang==="id"?"Indonesian":"English"}.`;
+      const reply=await callClaude({apiKey,messages:nm,system:sys});
+      setMsgs(prev=>[...prev,{role:"assistant",content:reply}]);
+    } catch(e) { setMsgs(prev=>[...prev,{role:"assistant",content:`⚠ ${e.message}`,error:true}]); }
+    setLoading(false);
+  };
+
+  return (
+    <div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}}>
+        <div><h2 style={{fontSize:20,fontWeight:700,color:"#0F172A",margin:0}}>{t.title}</h2><p style={{color:"#64748B",fontSize:13,marginTop:4}}>{t.subtitle}</p></div>
+        {msgs.length>0&&<button onClick={()=>setMsgs([])} style={{fontSize:11,color:"#EF4444",background:"none",border:"1px solid #FECACA",borderRadius:6,padding:"4px 8px",cursor:"pointer"}}>{t.clear}</button>}
+      </div>
+
+      {!apiKey && (
+        <div>
+          <SCard style={{background:"#FFFBEB",border:"1px solid #FDE68A",marginBottom:12}}>
+            <div style={{fontSize:13,color:"#92400E",fontWeight:600,marginBottom:4}}>🔑 {t.noKey}</div>
+            <div style={{fontSize:12,color:"#92400E"}}>{t.apiKeyNotice}</div>
+          </SCard>
+          <button onClick={()=>setShowFaq(!showFaq)} style={{width:"100%",padding:"10px",borderRadius:10,border:"1px solid #E2E8F0",background:"#F8FAFC",color:"#374151",fontWeight:600,fontSize:13,cursor:"pointer",fontFamily:"Plus Jakarta Sans,sans-serif",marginBottom:10}}>
+            {showFaq?"▲":"▼"} {t.faqTitle}
+          </button>
+          {showFaq && (
+            <div style={{display:"flex",flexDirection:"column",gap:8}}>
+              {FAQ.map((item,i)=>(
+                <SCard key={i}>
+                  <div style={{fontWeight:700,fontSize:13,color:"#0F172A",marginBottom:6}}>❓ {item.q[lang]||item.q.id}</div>
+                  <div style={{fontSize:12,color:"#374151",lineHeight:1.6}}>{item.a[lang]||item.a.id}</div>
+                </SCard>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {apiKey && (
+        <div>
+          <div style={{overflowY:"auto",minHeight:160,maxHeight:"calc(100vh - 390px)",display:"flex",flexDirection:"column",gap:8,marginBottom:8}}>
+            {msgs.length===0 && (
+              <div style={{textAlign:"center",padding:"24px 0",color:"#94A3B8",fontSize:13}}>
+                <div style={{fontSize:30,marginBottom:8}}>💬</div>
+                {lang==="id"?"Tanya apa saja tentang visualisasi data...":"Ask anything about data visualization..."}
+              </div>
+            )}
+            {msgs.map((msg,i)=>(
+              <div key={i} style={{display:"flex",justifyContent:msg.role==="user"?"flex-end":"flex-start"}}>
+                <div style={{maxWidth:"85%",padding:"10px 12px",borderRadius:msg.role==="user"?"12px 12px 4px 12px":"12px 12px 12px 4px",background:msg.role==="user"?"#2563EB":"#F8FAFC",border:msg.role!=="user"?"1px solid #E2E8F0":"none",color:msg.role==="user"?"#fff":msg.error?"#991B1B":"#374151",fontSize:13,lineHeight:1.6}}>
+                  <div style={{whiteSpace:"pre-wrap"}}>{msg.content}</div>
+                  {msg.role==="assistant"&&!msg.error&&<button onClick={()=>{navigator.clipboard.writeText(msg.content);setCopied(i);setTimeout(()=>setCopied(null),2000);}} style={{marginTop:4,fontSize:10,color:"#94A3B8",background:"none",border:"none",cursor:"pointer",padding:0,fontFamily:"Plus Jakarta Sans,sans-serif"}}>{copied===i?T[lang].common.copied:T[lang].common.copy}</button>}
+                </div>
+              </div>
+            ))}
+            {loading&&<div style={{display:"flex",justifyContent:"flex-start"}}><div style={{padding:"10px 14px",background:"#F8FAFC",border:"1px solid #E2E8F0",borderRadius:"12px 12px 12px 4px"}}><Dots/></div></div>}
+            <div ref={bottomRef}/>
+          </div>
+          {msgs.length===0 && (
+            <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:8}}>
+              {FAQ.slice(0,3).map((item,i)=>(
+                <button key={i} onClick={()=>send(item.q[lang]||item.q.id)} style={{fontSize:11,padding:"5px 10px",borderRadius:20,border:"1px solid #E2E8F0",background:"#F8FAFC",color:"#374151",cursor:"pointer",fontFamily:"Plus Jakarta Sans,sans-serif"}}>
+                  {item.q[lang]||item.q.id}
+                </button>
+              ))}
+            </div>
+          )}
+          <div style={{display:"flex",gap:8}}>
+            <textarea value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();send();}}} placeholder={t.placeholder} rows={2}
+              style={{flex:1,padding:"10px 12px",borderRadius:10,border:"1px solid #E2E8F0",fontSize:13,resize:"none",outline:"none",fontFamily:"Plus Jakarta Sans,sans-serif",color:"#374151"}}/>
+            <button onClick={()=>send()} disabled={loading||!input.trim()} style={{padding:"0 16px",borderRadius:10,border:"none",cursor:"pointer",background:loading||!input.trim()?"#CBD5E1":"#2563EB",color:"#fff",fontWeight:700,fontSize:13,flexShrink:0,fontFamily:"Plus Jakarta Sans,sans-serif"}}>{t.send}</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── IMPROVE MODULE ─────────────────────────────────────────────────────────
+function ImproveModule({ lang, apiKey }) {
+  const t = T[lang].improve;
+  const [imgPrev, setImgPrev] = useState(null);
+  const [imgB64, setImgB64] = useState(null);
+  const [imgMime, setImgMime] = useState("image/jpeg");
+  const [result, setResult] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [drag, setDrag] = useState(false);
+  const [mode, setMode] = useState("auto"); // "auto" | "text"
+  const [chartDesc, setChartDesc] = useState("");
+  const fileRef = useRef();
+
+  const handleFile = (file) => {
+    if(!file.type.startsWith("image/"))return;
+    setResult(null); setError(""); setMode("auto"); setChartDesc("");
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const original = e.target.result;
+      setImgPrev(original);
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 512;
+        let w = img.width, h = img.height;
+        if (w > MAX || h > MAX) {
+          if (w >= h) { h = Math.round(h * MAX / w); w = MAX; }
+          else { w = Math.round(w * MAX / h); h = MAX; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        setImgB64(canvas.toDataURL('image/jpeg', 0.75).split(',')[1]);
+        setImgMime('image/jpeg');
+      };
+      img.onerror = () => { setImgB64(original.split(',')[1]); };
+      img.src = original;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const runVision = async () => {
+    const sys = `You are a data visualization expert. Analyze the uploaded chart image and provide improvement suggestions AND a redesigned chart. Respond ONLY with valid JSON (no markdown):
+{"chartType":"type","overallScore":7,"summary":"1-2 sentence assessment","issues":[{"severity":"high|medium|low","issue":"desc","fix":"fix"}],"improvements":[{"category":"Color|Layout|Labels|Title|Clutter|3D","suggestion":"suggestion"}],"positives":["good"],"redesignTips":"brief tip","redesignChart":{"type":"bar|grouped_bar|line|pie","title":"Improved: [original title]","labels":["l1","l2"],"series":[{"name":"series name","values":[10,20,30]}],"colors":["#2563EB","#F59E0B","#10B981","#EF4444"]}}
+For redesignChart: extract actual data values from the chart, use the IMPROVED chart type (e.g. grouped_bar for grouped 3D bars), distinct accessible colors. If single series, use "values" array directly instead of "series". Max 3 issues, 4 improvements. Respond in ${lang==="id"?"Indonesian":"English"}.`;
+    return callClaude({apiKey, messages:[{role:"user", content:lang==="id"?"Analisis grafik ini, berikan saran perbaikan, dan ekstrak data untuk redesign.":"Analyze this chart, provide improvement suggestions, and extract data for redesign."}], system:sys, imageBase64:imgB64, imageMime:imgMime, maxTokens:2000});
+  };
+
+  const runTextAnalysis = async () => {
+    if (!chartDesc.trim()) return null;
+    const sys = `You are a data visualization expert. The user describes a chart they want to improve. Provide structured improvement suggestions AND a redesigned chart based on the description. Respond ONLY with valid JSON (no markdown):
+{"chartType":"detected type","overallScore":5,"summary":"1-2 sentence assessment","issues":[{"severity":"high|medium|low","issue":"desc","fix":"fix"}],"improvements":[{"category":"Color|Layout|Labels|Title|Clutter|3D","suggestion":"suggestion"}],"positives":["good"],"redesignTips":"brief tip","redesignChart":{"type":"bar|grouped_bar|line|pie","title":"Improved: [chart title]","labels":["l1","l2"],"series":[{"name":"series name","values":[10,20]}],"colors":["#2563EB","#F59E0B","#10B981","#EF4444"]}}
+For redesignChart: infer reasonable data values from the description, use improved chart type and distinct accessible colors. Max 3 issues, 4 improvements. Respond in ${lang==="id"?"Indonesian":"English"}.`;
+    return callClaude({apiKey, messages:[{role:"user", content:`Analyze this chart and suggest improvements:\n\n${chartDesc}`}], system:sys, maxTokens:1500});
+  };
+
+  const analyze = async () => {
+    setLoading(true); setError(""); setResult(null);
+    try {
+      let txt;
+      if (mode === "text") {
+        txt = await runTextAnalysis();
+      } else {
+        try {
+          txt = await runVision();
+        } catch(vErr) {
+          // Vision failed — auto-switch to text mode
+          setMode("text");
+          setError(lang==="id"
+            ? "Vision AI tidak tersedia di Artifact mode. Gunakan mode deskripsi di bawah (selalu berhasil), atau deploy haloviz-pwa.html untuk vision penuh."
+            : "Vision AI unavailable in Artifact mode. Use description mode below (always works), or deploy haloviz-pwa.html for full vision.");
+          setLoading(false);
+          return;
+        }
+      }
+      if (txt) setResult(safeJSON(txt));
+    } catch(e) {
+      setError(e.message || T[lang].common.error);
+    }
+    setLoading(false);
+  };
+
+  if (!apiKey) return (
+    <div>
+      <h2 style={{fontSize:20,fontWeight:700,color:"#0F172A",margin:"0 0 8px"}}>{t.title}</h2>
+      <p style={{color:"#64748B",fontSize:13,marginBottom:14}}>{t.subtitle}</p>
+      <div style={{background:"#FEF2F2",border:"1px solid #FECACA",borderRadius:10,padding:16,textAlign:"center"}}>
+        <div style={{fontSize:36,marginBottom:8}}>🔑</div>
+        <div style={{fontSize:13,color:"#B91C1C"}}>{t.noKey}</div>
+      </div>
+    </div>
+  );
+
+  const sev={high:"#EF4444",medium:"#F59E0B",low:"#10B981"};
+  const sevLbl={high:"🔴 "+(lang==="id"?"Kritis":"Critical"),medium:"🟡 "+(lang==="id"?"Sedang":"Medium"),low:"🟢 Minor"};
+
+  return (
+    <div>
+      <h2 style={{fontSize:20,fontWeight:700,color:"#0F172A",margin:"0 0 4px"}}>{t.title}</h2>
+      <p style={{color:"#64748B",fontSize:13,marginBottom:12}}>{t.subtitle}</p>
+
+      {/* Mode toggle */}
+      <div style={{display:"flex",gap:6,marginBottom:12}}>
+        <button onClick={()=>{setMode("auto");setError("");setResult(null);}} style={{flex:1,padding:"8px 0",borderRadius:8,border:`1px solid ${mode!=="text"?"#2563EB":"#E2E8F0"}`,background:mode!=="text"?"#EFF6FF":"#fff",color:mode!=="text"?"#2563EB":"#64748B",fontWeight:mode!=="text"?700:500,fontSize:12,cursor:"pointer",fontFamily:"Plus Jakarta Sans,sans-serif"}}>
+          🖼️ {lang==="id"?"Upload Gambar (Vision)":"Upload Image (Vision)"}
+        </button>
+        <button onClick={()=>{setMode("text");setError("");setResult(null);}} style={{flex:1,padding:"8px 0",borderRadius:8,border:`1px solid ${mode==="text"?"#10B981":"#E2E8F0"}`,background:mode==="text"?"#F0FDF4":"#fff",color:mode==="text"?"#059669":"#64748B",fontWeight:mode==="text"?700:500,fontSize:12,cursor:"pointer",fontFamily:"Plus Jakarta Sans,sans-serif"}}>
+          ✏️ {lang==="id"?"Deskripsikan Chart":"Describe Chart"}
+        </button>
+      </div>
+
+      {mode !== "text" && (
+        <div>
+          <div onClick={()=>fileRef.current?.click()} onDragOver={e=>{e.preventDefault();setDrag(true);}} onDragLeave={()=>setDrag(false)}
+            onDrop={e=>{e.preventDefault();setDrag(false);const f=e.dataTransfer.files[0];if(f)handleFile(f);}}
+            style={{border:`2px dashed ${drag?"#2563EB":imgPrev?"#10B981":"#CBD5E1"}`,borderRadius:12,padding:imgPrev?8:"22px 20px",textAlign:"center",cursor:"pointer",background:drag?"#EFF6FF":"#F8FAFC",transition:"all 0.15s",marginBottom:12,overflow:"hidden"}}>
+            {imgPrev?<img src={imgPrev} alt="Preview" style={{maxWidth:"100%",maxHeight:250,borderRadius:8,objectFit:"contain"}}/>:<><div style={{fontSize:34,marginBottom:8}}>🖼️</div><div style={{fontSize:13,color:"#64748B"}}>{t.dropHint}</div></>}
+            <input ref={fileRef} type="file" accept="image/*" style={{display:"none"}} onChange={e=>e.target.files[0]&&handleFile(e.target.files[0])}/>
+          </div>
+          {imgPrev && (
+            <div style={{background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:8,padding:"8px 12px",marginBottom:12,fontSize:12,color:"#92400E"}}>
+              ⚡ {lang==="id"
+                ?"Vision AI mungkin tidak tersedia di Artifact mode. Jika error, gunakan tab 'Deskripsikan Chart' yang selalu berhasil."
+                :"Vision AI may not work in Artifact mode. If error occurs, use 'Describe Chart' tab which always works."}
+            </div>
+          )}
+          {imgPrev && <button onClick={analyze} disabled={loading} style={{width:"100%",padding:12,borderRadius:10,border:"none",cursor:loading?"not-allowed":"pointer",background:loading?"#94A3B8":"#2563EB",color:"#fff",fontWeight:700,fontSize:14,fontFamily:"Plus Jakarta Sans,sans-serif",marginBottom:14}}>{loading?<Dots/>:t.analyze}</button>}
+        </div>
+      )}
+
+      {mode === "text" && (
+        <div style={{marginBottom:12}}>
+          <SCard style={{background:"#F0FDF4",border:"1px solid #A7F3D0",marginBottom:12}}>
+            <div style={{fontSize:12,color:"#059669",fontWeight:600,marginBottom:4}}>✓ {lang==="id"?"Mode ini selalu berhasil tanpa limitasi proxy":"This mode always works without proxy limitations"}</div>
+            <div style={{fontSize:12,color:"#065F46"}}>{lang==="id"?"Deskripsikan chart Anda: tipe grafik, data yang ditampilkan, warna yang digunakan, dan masalah yang ingin diperbaiki.":"Describe your chart: chart type, data shown, colors used, and issues you want to fix."}</div>
+          </SCard>
+          {imgPrev && <div style={{marginBottom:10,background:"#F8FAFC",borderRadius:8,padding:6,border:"1px solid #E2E8F0",textAlign:"center"}}><img src={imgPrev} alt="Chart" style={{maxWidth:"100%",maxHeight:180,borderRadius:6,objectFit:"contain"}}/></div>}
+          <div style={{fontSize:11,fontWeight:600,color:"#64748B",marginBottom:6}}>{lang==="id"?"Deskripsikan chart Anda:":"Describe your chart:"}</div>
+          <textarea value={chartDesc} onChange={e=>setChartDesc(e.target.value)} rows={5} placeholder={lang==="id"
+            ?"Contoh: 3D grouped bar chart membandingkan penjualan 4 buah (Bananas, Lemons, Apples, Oranges) selama Jan-Apr. Masalah: efek 3D distorsi nilai, warna terlalu mirip (semua ungu/biru), tidak ada judul dan data labels."
+            :"Example: 3D grouped bar chart comparing sales of 4 fruits (Bananas, Lemons, Apples, Oranges) over Jan-Apr. Issues: 3D effect distorts values, colors too similar (all purple/blue), missing title and data labels."}
+            style={{width:"100%",padding:"10px",borderRadius:10,border:"1px solid #E2E8F0",fontSize:13,resize:"vertical",outline:"none",fontFamily:"Plus Jakarta Sans,sans-serif",color:"#374151",boxSizing:"border-box",marginBottom:10}}/>
+          <button onClick={analyze} disabled={loading||!chartDesc.trim()} style={{width:"100%",padding:12,borderRadius:10,border:"none",cursor:(loading||!chartDesc.trim())?"not-allowed":"pointer",background:(loading||!chartDesc.trim())?"#CBD5E1":"#10B981",color:"#fff",fontWeight:700,fontSize:14,fontFamily:"Plus Jakarta Sans,sans-serif"}}>{loading?<Dots/>:(lang==="id"?"Analisis Deskripsi":"Analyze Description")}</button>
+        </div>
+      )}
+
+      {error && <div style={{padding:12,background:"#FEF2F2",borderRadius:8,color:"#991B1B",fontSize:13,marginBottom:12}}>{error}</div>}
+
+      {result && (
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {/* ── Redesigned Chart Preview (top of results) ── */}
+          {result.redesignChart && renderRedesignSVG(result.redesignChart) && (
+            <SCard style={{border:"2px solid #10B981"}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
+                <span style={{fontSize:18}}>✨</span>
+                <div>
+                  <div style={{fontSize:11,fontWeight:700,color:"#059669",textTransform:"uppercase",letterSpacing:1}}>{lang==="id"?"Versi Perbaikan (Contoh)":"Redesigned Version (Example)"}</div>
+                  <div style={{fontSize:11,color:"#64748B"}}>{lang==="id"?"Begini tampilan chart setelah saran diterapkan":"How the chart looks after applying suggestions"}</div>
+                </div>
+              </div>
+              <div style={{overflowX:"auto",borderRadius:8,border:"1px solid #E2E8F0"}} dangerouslySetInnerHTML={{__html:renderRedesignSVG(result.redesignChart)}}/>
+            </SCard>
+          )}
+          <SCard style={{background:"linear-gradient(135deg,#EFF6FF,#F0FDF4)",border:"1px solid #BFDBFE"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div style={{flex:1,paddingRight:12}}>
+                <div style={{fontSize:11,fontWeight:700,color:"#64748B",textTransform:"uppercase",letterSpacing:1}}>{lang==="id"?"Terdeteksi":"Detected"}</div>
+                <div style={{fontWeight:700,fontSize:14,color:"#0F172A"}}>{result.chartType}</div>
+                <div style={{fontSize:12,color:"#64748B",marginTop:3}}>{result.summary}</div>
+              </div>
+              <div style={{textAlign:"center"}}>
+                <div style={{fontSize:30,fontWeight:800,color:result.overallScore>=7?"#10B981":result.overallScore>=5?"#F59E0B":"#EF4444"}}>{result.overallScore}</div>
+                <div style={{fontSize:10,color:"#94A3B8"}}>/10</div>
+              </div>
+            </div>
+          </SCard>
+          {result.positives&&result.positives.length>0&&<SCard style={{background:"#F0FDF4",border:"1px solid #86EFAC"}}><div style={{fontSize:11,fontWeight:700,color:"#166534",marginBottom:6}}>✓ {lang==="id"?"Yang Sudah Bagus":"What's Good"}</div>{result.positives.map((p,i)=><div key={i} style={{fontSize:12,color:"#15803D",marginBottom:2}}>• {p}</div>)}</SCard>}
+          {result.issues&&result.issues.length>0&&<SCard><div style={{fontSize:11,fontWeight:700,color:"#64748B",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>⚠ {lang==="id"?"Masalah":"Issues"}</div>{result.issues.map((iss,i)=><div key={i} style={{borderLeft:`3px solid ${sev[iss.severity]||"#64748B"}`,paddingLeft:10,marginBottom:10}}><div style={{fontSize:11,fontWeight:700,color:sev[iss.severity]||"#64748B",marginBottom:2}}>{sevLbl[iss.severity]||iss.severity}</div><div style={{fontSize:12,color:"#374151",fontWeight:600}}>{iss.issue}</div><div style={{fontSize:12,color:"#64748B",marginTop:2}}>→ {iss.fix}</div></div>)}</SCard>}
+          {result.improvements&&result.improvements.length>0&&<SCard><div style={{fontSize:11,fontWeight:700,color:"#64748B",textTransform:"uppercase",letterSpacing:1,marginBottom:8}}>💡 {lang==="id"?"Saran Perbaikan":"Suggestions"}</div>{result.improvements.map((imp,i)=><div key={i} style={{display:"flex",gap:8,marginBottom:8,alignItems:"flex-start"}}><Chip color="#2563EB">{imp.category}</Chip><div style={{fontSize:12,color:"#374151",flex:1}}>{imp.suggestion}</div></div>)}</SCard>}
+          {result.redesignTips&&<SCard style={{background:"#FFF7ED",border:"1px solid #FED7AA"}}><div style={{fontSize:11,fontWeight:700,color:"#92400E",marginBottom:6}}>🔄 {lang==="id"?"Tips Redesign":"Redesign Tips"}</div><div style={{fontSize:12,color:"#92400E"}}>{result.redesignTips}</div></SCard>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── CHART ILLUSTRATOR MODULE ─────────────────────────────────────────────────
+function ChartIllustratorModule({ lang, apiKey }) {
+  const t = T[lang].illustrator;
+  const [desc, setDesc] = useState("");
+  const [chartType, setChartType] = useState("auto");
+  const [scheme, setScheme] = useState("blue");
+  const [svg, setSvg] = useState(null);
+  const [meta, setMeta] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [copied, setCopied] = useState(false);
+  const [mTitle, setMTitle] = useState("");
+  const [mLabels, setMLabels] = useState("");
+  const [mValues, setMValues] = useState("");
+  const [mType, setMType] = useState("bar");
+
+  const colors = () => COLOR_SCHEMES[scheme]||COLOR_SCHEMES.blue;
+
+  const applyScheme = (s) => {
+    setScheme(s);
+    if (meta) setSvg(buildSVG(meta.type, meta.title, meta.labels, meta.values, COLOR_SCHEMES[s]||COLOR_SCHEMES.blue, 400, 260));
+  };
+
+  const renderManual = () => {
+    const labels=mLabels.split(",").map(s=>s.trim()).filter(Boolean);
+    const values=mValues.split(",").map(s=>parseFloat(s.trim())).filter(n=>!isNaN(n));
+    if(!labels.length||!values.length)return;
+    const title=mTitle||(lang==="id"?"Chart Saya":"My Chart");
+    const m={type:mType,title,labels,values};
+    setMeta(m); setSvg(buildSVG(mType,title,labels,values,colors(),400,260)); setError("");
+  };
+
+  const generateAI = async () => {
+    if(!desc.trim()||!apiKey)return;
+    setLoading(true); setError(""); setSvg(null); setMeta(null);
+    try {
+      const typeHint=chartType!=="auto"?`Use chart type: ${chartType}.`:"Choose best chart type.";
+      const sys=`You are a data visualization expert. Parse the user description and extract structured chart data. ${typeHint} Respond ONLY with valid JSON (no markdown): {"type":"bar|line|area|pie","title":"chart title","labels":["l1","l2"],"values":[100,200],"insight":"one key insight"} Titles and labels in ${lang==="id"?"Indonesian":"English"}.`;
+      const txt=await callClaude({apiKey,messages:[{role:"user",content:desc}],system:sys});
+      const parsed=safeJSON(txt);
+      setMeta(parsed);
+      setSvg(buildSVG(parsed.type,parsed.title,parsed.labels,parsed.values,colors(),400,260));
+    } catch(e){ setError(e.message||T[lang].common.error); }
+    setLoading(false);
+  };
+
+  const download = () => {
+    if(!svg)return;
+    const b=new Blob([svg],{type:"image/svg+xml"});
+    const u=URL.createObjectURL(b);
+    const a=document.createElement("a"); a.href=u; a.download=`${meta?.title||"chart"}.svg`; a.click(); URL.revokeObjectURL(u);
+  };
+
+  return (
+    <div>
+      <h2 style={{fontSize:20,fontWeight:700,color:"#0F172A",margin:"0 0 4px"}}>{t.title}</h2>
+      <p style={{color:"#64748B",fontSize:13,marginBottom:12}}>{t.subtitle}</p>
+      <div style={{background:"#EFF6FF",border:"1px solid #BFDBFE",borderRadius:8,padding:"8px 12px",marginBottom:12,fontSize:12,color:"#1E40AF"}}>{t.tip}</div>
+
+      <div style={{marginBottom:12}}>
+        <div style={{fontSize:11,fontWeight:700,color:"#64748B",textTransform:"uppercase",letterSpacing:1,marginBottom:6}}>{t.colorScheme}</div>
+        <div style={{display:"flex",gap:6}}>
+          {Object.entries(COLOR_SCHEMES).map(([key,cols])=>(
+            <button key={key} onClick={()=>applyScheme(key)} style={{flex:1,height:26,borderRadius:6,border:`2px solid ${scheme===key?"#0F172A":"transparent"}`,overflow:"hidden",cursor:"pointer",padding:0,display:"flex"}}>
+              {cols.slice(0,4).map((c,i)=><div key={i} style={{flex:1,background:c}}/>)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {apiKey ? (
+        <div style={{marginBottom:14}}>
+          <div style={{fontWeight:700,fontSize:13,color:"#0F172A",marginBottom:6}}>✨ {lang==="id"?"Mode AI":"AI Mode"}</div>
+          <textarea value={desc} onChange={e=>setDesc(e.target.value)} placeholder={t.descPh} rows={3}
+            style={{width:"100%",padding:"10px",borderRadius:10,border:"1px solid #E2E8F0",fontSize:13,resize:"vertical",outline:"none",fontFamily:"Plus Jakarta Sans,sans-serif",color:"#374151",boxSizing:"border-box",marginBottom:8}}/>
+          <div style={{display:"flex",gap:8,marginBottom:8}}>
+            <select value={chartType} onChange={e=>setChartType(e.target.value)} style={{flex:1,padding:"8px 10px",borderRadius:8,border:"1px solid #E2E8F0",fontSize:12,background:"#fff",color:"#374151",outline:"none",fontFamily:"Plus Jakarta Sans,sans-serif"}}>
+              {Object.entries(t.types).map(([v,lbl])=><option key={v} value={v}>{lbl}</option>)}
+            </select>
+          </div>
+          <button onClick={generateAI} disabled={loading||!desc.trim()} style={{width:"100%",padding:"11px",borderRadius:10,border:"none",cursor:loading?"not-allowed":"pointer",background:loading?"#94A3B8":"#7C3AED",color:"#fff",fontWeight:700,fontSize:14,fontFamily:"Plus Jakarta Sans,sans-serif"}}>
+            {loading?<Dots/>:t.generate}
+          </button>
+        </div>
+      ) : (
+        <div style={{background:"#FFFBEB",border:"1px solid #FDE68A",borderRadius:8,padding:"8px 12px",marginBottom:14,fontSize:12,color:"#92400E"}}>🔑 {t.apiKeyNotice}</div>
+      )}
+
+      <div style={{border:"1px solid #E2E8F0",borderRadius:10,padding:14,marginBottom:12}}>
+        <div style={{fontWeight:700,fontSize:13,color:"#0F172A",marginBottom:10}}>📊 {t.manualInput}</div>
+        <div style={{display:"flex",gap:8,marginBottom:8}}>
+          <div style={{flex:1}}>
+            <div style={{fontSize:11,fontWeight:600,color:"#64748B",marginBottom:4}}>{t.manualTitle}</div>
+            <input value={mTitle} onChange={e=>setMTitle(e.target.value)} placeholder={t.manualTitlePh}
+              style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid #E2E8F0",fontSize:12,outline:"none",fontFamily:"Plus Jakarta Sans,sans-serif",color:"#374151",boxSizing:"border-box"}}/>
+          </div>
+          <div style={{width:100}}>
+            <div style={{fontSize:11,fontWeight:600,color:"#64748B",marginBottom:4}}>{t.chartType}</div>
+            <select value={mType} onChange={e=>setMType(e.target.value)} style={{width:"100%",padding:"8px 6px",borderRadius:8,border:"1px solid #E2E8F0",fontSize:12,background:"#fff",color:"#374151",outline:"none",fontFamily:"Plus Jakarta Sans,sans-serif"}}>
+              {[["bar","Bar"],["line","Line"],["pie","Pie"],["area","Area"]].map(([v,l])=><option key={v} value={v}>{l}</option>)}
+            </select>
+          </div>
+        </div>
+        <div style={{marginBottom:8}}>
+          <div style={{fontSize:11,fontWeight:600,color:"#64748B",marginBottom:4}}>{t.manualLabels}</div>
+          <input value={mLabels} onChange={e=>setMLabels(e.target.value)} placeholder={t.manualLabelsPh}
+            style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid #E2E8F0",fontSize:12,outline:"none",fontFamily:"Plus Jakarta Sans,sans-serif",color:"#374151",boxSizing:"border-box"}}/>
+        </div>
+        <div style={{marginBottom:10}}>
+          <div style={{fontSize:11,fontWeight:600,color:"#64748B",marginBottom:4}}>{t.manualValues}</div>
+          <input value={mValues} onChange={e=>setMValues(e.target.value)} placeholder={t.manualValuesPh}
+            style={{width:"100%",padding:"8px 10px",borderRadius:8,border:"1px solid #E2E8F0",fontSize:12,outline:"none",fontFamily:"Plus Jakarta Sans,sans-serif",color:"#374151",boxSizing:"border-box"}}/>
+        </div>
+        <button onClick={renderManual} disabled={!mLabels.trim()||!mValues.trim()} style={{width:"100%",padding:"11px",borderRadius:10,border:"none",cursor:(!mLabels.trim()||!mValues.trim())?"not-allowed":"pointer",background:(!mLabels.trim()||!mValues.trim())?"#CBD5E1":"#2563EB",color:"#fff",fontWeight:700,fontSize:13,fontFamily:"Plus Jakarta Sans,sans-serif"}}>
+          📊 {t.renderManual}
+        </button>
+      </div>
+
+      {error&&<div style={{padding:12,background:"#FEF2F2",borderRadius:8,color:"#991B1B",fontSize:13,marginBottom:12}}>⚠ {error}</div>}
+
+      {svg&&(
+        <div>
+          <div style={{background:"#fff",border:"1px solid #E2E8F0",borderRadius:12,padding:"10px 8px",marginBottom:10,overflowX:"auto"}} dangerouslySetInnerHTML={{__html:svg}}/>
+          {meta?.insight&&<div style={{background:"#F0FDF4",border:"1px solid #86EFAC",borderRadius:8,padding:"8px 12px",marginBottom:10}}><span style={{fontSize:11,fontWeight:700,color:"#166534"}}>💡 </span><span style={{fontSize:12,color:"#15803D"}}>{meta.insight}</span></div>}
+          <div style={{display:"flex",gap:8}}>
+            <button onClick={()=>{navigator.clipboard.writeText(svg);setCopied(true);setTimeout(()=>setCopied(false),2000);}} style={{flex:1,padding:"10px",borderRadius:8,border:"1px solid #E2E8F0",background:copied?"#10B981":"#fff",color:copied?"#fff":"#374151",fontWeight:600,fontSize:12,cursor:"pointer",fontFamily:"Plus Jakarta Sans,sans-serif",transition:"all 0.15s"}}>
+              {copied?t.copied:t.copySvg}
+            </button>
+            <button onClick={download} style={{flex:1,padding:"10px",borderRadius:8,border:"none",background:"#7C3AED",color:"#fff",fontWeight:600,fontSize:12,cursor:"pointer",fontFamily:"Plus Jakarta Sans,sans-serif"}}>{t.downloadSvg}</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── SETTINGS MODULE ──────────────────────────────────────────────────────────
+function SettingsModule({ lang, setLang, apiKey, setApiKey }) {
+  const t = T[lang].settings;
+  const [input, setInput] = useState(apiKey);
+  const [saved, setSaved] = useState(false);
+  const save=()=>{ setApiKey(input); localStorage.setItem("hv_api_key",input); setSaved(true); setTimeout(()=>setSaved(false),2000); };
+  const clearAll=()=>{ if(window.confirm(t.clearConfirm)){localStorage.clear();setApiKey("");setInput("");} };
+  const features = [
+    {name:lang==="id"?"Panduan (offline)":"Guide (offline)",ok:true},
+    {name:lang==="id"?"Storytelling Board (offline)":"Storytelling Board (offline)",ok:true},
+    {name:lang==="id"?"Chart Illustrator — Input Manual":"Chart Illustrator — Manual Input",ok:true},
+    {name:lang==="id"?"Rekomendasi (rule-based)":"Recommendation (rule-based)",ok:true},
+    {name:lang==="id"?"Rekomendasi (AI)":"Recommendation (AI)",ok:false},
+    {name:lang==="id"?"Chart Illustrator (AI)":"Chart Illustrator (AI)",ok:false},
+    {name:lang==="id"?"Tanya AI":"Ask AI",ok:false},
+    {name:lang==="id"?"Perbaiki Grafik (Vision AI)":"Improve Chart (Vision AI)",ok:false},
+  ];
+  return (
+    <div>
+      <h2 style={{fontSize:20,fontWeight:700,color:"#0F172A",margin:"0 0 18px"}}>{t.title}</h2>
+      <SCard style={{marginBottom:12}}>
+        <div style={{fontWeight:700,fontSize:13,color:"#0F172A",marginBottom:8}}>{t.language}</div>
+        <div style={{display:"flex",gap:8}}>
+          {["id","en"].map(l=>(
+            <button key={l} onClick={()=>{setLang(l);localStorage.setItem("hv_lang",l);}} style={{flex:1,padding:"10px",borderRadius:8,border:`2px solid ${lang===l?"#2563EB":"#E2E8F0"}`,background:lang===l?"#EFF6FF":"#fff",color:lang===l?"#2563EB":"#64748B",fontWeight:lang===l?700:400,cursor:"pointer",fontSize:13,fontFamily:"Plus Jakarta Sans,sans-serif"}}>
+              {l==="id"?"🇮🇩 Indonesia":"🇬🇧 English"}
+            </button>
+          ))}
+        </div>
+      </SCard>
+      <SCard style={{marginBottom:12}}>
+        <div style={{fontWeight:700,fontSize:13,color:"#0F172A",marginBottom:4}}>{t.apiKey}</div>
+        <input type="password" value={input} onChange={e=>setInput(e.target.value)} placeholder={t.apiKeyPlaceholder}
+          style={{width:"100%",padding:"10px 12px",borderRadius:8,border:"1px solid #E2E8F0",fontSize:13,boxSizing:"border-box",marginBottom:8,outline:"none",fontFamily:"monospace"}}/>
+        <div style={{fontSize:11,color:"#94A3B8",marginBottom:10}}>🔒 {t.apiKeyHint}</div>
+        <button onClick={save} style={{width:"100%",padding:"10px",borderRadius:8,border:"none",cursor:"pointer",background:saved?"#10B981":"#2563EB",color:"#fff",fontWeight:700,fontSize:13,fontFamily:"Plus Jakarta Sans,sans-serif"}}>{saved?t.saved:t.save}</button>
+      </SCard>
+      <SCard style={{marginBottom:12}}>
+        <div style={{fontWeight:700,fontSize:13,color:"#0F172A",marginBottom:10}}>{lang==="id"?"Status Fitur":"Feature Status"}</div>
+        {features.map((f,i)=>(
+          <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"5px 0",borderBottom:i<features.length-1?"1px solid #F1F5F9":"none"}}>
+            <span style={{fontSize:12,color:"#374151"}}>{f.name}</span>
+            <span style={{fontSize:10,fontWeight:700,padding:"2px 8px",borderRadius:20,background:f.ok?"#F0FDF4":(apiKey?"#EFF6FF":"#F8FAFC"),color:f.ok?"#059669":(apiKey?"#2563EB":"#94A3B8"),border:`1px solid ${f.ok?"#A7F3D0":(apiKey?"#BFDBFE":"#E2E8F0")}`}}>
+              {f.ok?"✓ Offline":(apiKey?(lang==="id"?"✓ Aktif":"✓ Active"):(lang==="id"?"Butuh API Key":"Needs API Key"))}
+            </span>
+          </div>
+        ))}
+      </SCard>
+      <button onClick={clearAll} style={{width:"100%",padding:"10px",borderRadius:8,border:"1px solid #FECACA",background:"#FEF2F2",color:"#EF4444",fontWeight:600,fontSize:13,cursor:"pointer",fontFamily:"Plus Jakarta Sans,sans-serif"}}>{t.clearData}</button>
+    </div>
+  );
+}
+
+// ─── APP ──────────────────────────────────────────────────────────────────────
+export default function App() {
+  const [lang, setLang] = useState(()=>localStorage.getItem("hv_lang")||"id");
+  const [apiKey, setApiKey] = useState(()=>localStorage.getItem("hv_api_key")||"");
+  const [tab, setTab] = useState("guide");
+  const t = T[lang];
+  const hasKey = !!apiKey;
+  const nav = [
+    {id:"guide",      icon:"📖", label:t.nav.guide},
+    {id:"board",      icon:"🗂️", label:t.nav.board},
+    {id:"recommend",  icon:"📊", label:t.nav.recommend},
+    {id:"ask",        icon:"💬", label:t.nav.ask},
+    {id:"illustrator",icon:"🎨", label:t.nav.illustrator},
+    {id:"improve",    icon:"🔍", label:t.nav.improve},
+  ];
+  return (
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        *{box-sizing:border-box;margin:0;padding:0;}
+        body{font-family:'Plus Jakarta Sans',sans-serif;background:#F8FAFC;color:#0F172A;}
+        @keyframes pulse{0%,100%{opacity:.3;transform:scale(.8)}50%{opacity:1;transform:scale(1)}}
+        ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:2px;}
+      `}</style>
+      <div style={{maxWidth:480,margin:"0 auto",minHeight:"100vh",display:"flex",flexDirection:"column",background:"#F8FAFC"}}>
+        <div style={{background:"#0F172A",padding:"12px 16px",position:"sticky",top:0,zIndex:100}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div>
+              <div style={{fontWeight:800,fontSize:18,color:"#fff",letterSpacing:-0.5}}>📈 {t.appName}</div>
+              <div style={{fontSize:10,color:"#94A3B8",marginTop:1}}>{t.appTagline}</div>
+            </div>
+            <div style={{display:"flex",gap:6,alignItems:"center"}}>
+              <div style={{padding:"3px 8px",borderRadius:20,fontSize:10,fontWeight:700,background:hasKey?"#06400020":"#37415120",color:hasKey?"#34D399":"#94A3B8",border:`1px solid ${hasKey?"#34D39940":"#47556940"}`}}>
+                {hasKey?t.common.online:t.common.offline}
+              </div>
+              <button onClick={()=>setTab("settings")} style={{background:"none",border:"none",cursor:"pointer",fontSize:18,lineHeight:1,opacity:tab==="settings"?1:0.5,padding:"2px"}}>⚙️</button>
+            </div>
+          </div>
+        </div>
+        <div style={{flex:1,padding:"16px 16px 90px",overflowY:"auto"}}>
+          {tab==="guide"&&<GuideModule lang={lang}/>}
+          {tab==="board"&&<BoardModule lang={lang} apiKey={apiKey}/>}
+          {tab==="recommend"&&<RecommendModule lang={lang} apiKey={apiKey}/>}
+          {tab==="ask"&&<AskModule lang={lang} apiKey={apiKey}/>}
+          {tab==="illustrator"&&<ChartIllustratorModule lang={lang} apiKey={apiKey}/>}
+          {tab==="improve"&&<ImproveModule lang={lang} apiKey={apiKey}/>}
+          {tab==="settings"&&<SettingsModule lang={lang} setLang={setLang} apiKey={apiKey} setApiKey={setApiKey}/>}
+        </div>
+        <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,background:"#fff",borderTop:"1px solid #E2E8F0",display:"flex",padding:"5px 0 8px",zIndex:100,boxShadow:"0 -4px 12px rgba(0,0,0,0.06)"}}>
+          {nav.map(item=>(
+            <button key={item.id} onClick={()=>setTab(item.id)} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:1,background:"none",border:"none",cursor:"pointer",padding:"3px 1px",color:tab===item.id?"#2563EB":"#94A3B8"}}>
+              <span style={{fontSize:17}}>{item.icon}</span>
+              <span style={{fontSize:8,fontWeight:tab===item.id?700:500,lineHeight:1.2,textAlign:"center"}}>{item.label}</span>
+              {tab===item.id&&<div style={{width:18,height:2,borderRadius:1,background:"#2563EB",marginTop:1}}/>}
+            </button>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
+    ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
+  </script>
+  <script>
+    let dp=null;const b=document.getElementById('ib');
+    window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();dp=e;if(!localStorage.getItem('hv_dis')){setTimeout(()=>b.classList.add('show'),3000);}});
+    document.getElementById('ib-btn')?.addEventListener('click',async()=>{if(!dp)return;dp.prompt();await dp.userChoice;b.classList.remove('show');dp=null;});
+    document.getElementById('ib-x')?.addEventListener('click',()=>{b.classList.remove('show');localStorage.setItem('hv_dis','1');});
+    window.addEventListener('appinstalled',()=>b.classList.remove('show'));
+    if('serviceWorker' in navigator){
+      const sw=`const C='hv-v12';self.addEventListener('install',e=>{self.skipWaiting();});self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==C).map(k=>caches.delete(k)))));self.clients.claim();});self.addEventListener('fetch',e=>{if(e.request.url.includes('api.anthropic.com')||e.request.url.includes('fonts.g')||e.request.url.includes('unpkg.com'))return;e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(C).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match(e.request))));});`;
+      navigator.serviceWorker.register(URL.createObjectURL(new Blob([sw],{type:'application/javascript'}))).catch(()=>{});
+    }
+  </script>
+</body>
+</html>
